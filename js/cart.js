@@ -444,6 +444,7 @@ window.updateQty = updateQty;
 window.removeItem = removeItem;
 window.addToCart = addToCart;
 window.addPackToCart = addPackToCart;
+window.finalizarCompraConDatosEnvio = finalizarCompraConDatosEnvio;
 
 // Agregar función global para cerrar el modal
 window.cerrarModalConfirmacion = function() {
