@@ -20,13 +20,17 @@
         .btn-cocoa { background: #4d4845; color: white; padding: 10px 20px; border-radius: 30px; transition: all 0.3s; cursor: pointer; }
         .btn-cocoa:hover { background: #4a2e24; transform: scale(1.02); }
         .cupon { background: #f0f0f0; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .estado-pendiente { background: #f39c12; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        .estado-entregado { background: #27ae60; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        .estado-devuelto { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        select, input { cursor: pointer; }
+        .guia-input { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .transportadora-select { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
         .table-scroll { overflow-x: auto; }
         table { min-width: 1000px; }
         .logout-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; }
         .logout-btn:hover { text-decoration: underline; }
         #loginError { color: #e74c3c; font-size: 14px; margin-top: 10px; }
-        .guia-input { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
-        .transportadora-select { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -121,6 +125,7 @@
     import { cargarVentasFirestore, actualizarVentaFirestore, eliminarVentaFirestore } from './js/firebase-ventas.js';
     
     const ADMIN_EMAIL = "info@lumacolombia.com";
+    let ventasCache = [];
     
     window.loginAdmin = async function() {
         const email = document.getElementById('adminEmail').value;
@@ -198,60 +203,143 @@
     
     async function cargarVentas() {
         try {
-            const ventas = await cargarVentasFirestore();
-            console.log("Ventas cargadas:", ventas.length);
+            ventasCache = await cargarVentasFirestore();
+            console.log("Ventas cargadas:", ventasCache.length);
             
-            const totalVentas = ventas.length;
-            const entregados = ventas.filter(v => v.estadoEnvio === 'entregado').length;
-            const ingresos = ventas.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + (v.total || 0), 0);
+            const totalVentas = ventasCache.length;
+            const entregados = ventasCache.filter(v => v.estadoEnvio === 'entregado').length;
+            const ingresos = ventasCache.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + (v.total || 0), 0);
             
             document.getElementById('totalVentas').innerText = totalVentas;
             document.getElementById('totalEntregados').innerText = entregados;
             document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
             
-            if (ventas.length === 0) {
+            if (ventasCache.length === 0) {
                 document.getElementById('listaVentas').innerHTML = '<p class="text-gray-500">No hay ventas registradas</p>';
                 return;
             }
             
-            const ventasHtml = `
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-2 text-left">N° Pedido</th>
-                            <th class="p-2 text-left">Cliente</th>
-                            <th class="p-2 text-left">Fecha</th>
-                            <th class="p-2 text-left">Método</th>
-                            <th class="p-2 text-left">Total</th>
-                            <th class="p-2 text-left">Estado</th>
-                            <th class="p-2 text-left">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${ventas.map((v, idx) => `
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
-                                <td class="p-2">${v.usuario || v.email}</td>
-                                <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
-                                <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta'}</td>
-                                <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
-                                <td class="p-2">
-                                    <select onchange="actualizarEstado('${v.id}', this.value)" class="border rounded px-2 py-1 text-xs">
-                                        <option value="confirmado" ${v.estadoEnvio === 'confirmado' ? 'selected' : ''}>Confirmado</option>
-                                        <option value="preparando" ${v.estadoEnvio === 'preparando' ? 'selected' : ''}>Preparando</option>
-                                        <option value="enviado" ${v.estadoEnvio === 'enviado' ? 'selected' : ''}>Enviado</option>
-                                        <option value="entregado" ${v.estadoEnvio === 'entregado' ? 'selected' : ''}>Entregado</option>
-                                    </select>
-                                </td>
-                                <td class="p-2">
-                                    <button onclick="verDetalleVenta('${v.id}')" class="text-blue-600 text-sm hover:text-blue-800 mr-2">Ver</button>
-                                    <button onclick="eliminarVenta('${v.id}')" class="text-red-500 text-sm hover:text-red-700">Eliminar</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            let ventasHtml = `<table class="w-full text-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-2 text-left">N° Pedido</th>
+                        <th class="p-2 text-left">Cliente</th>
+                        <th class="p-2 text-left">Fecha</th>
+                        <th class="p-2 text-left">Método</th>
+                        <th class="p-2 text-left">Total</th>
+                        <th class="p-2 text-left">Estado pago</th>
+                        <th class="p-2 text-left">Estado envío</th>
+                        <th class="p-2 text-left">Guía</th>
+                        <th class="p-2 text-left">Transportadora</th>
+                        <th class="p-2 text-left">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            for (let i = 0; i < ventasCache.length; i++) {
+                const v = ventasCache[i];
+                ventasHtml += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
+                        <td class="p-2">${v.usuario || v.email}${v.ciudad ? `<br><span class="text-xs text-gray-400">${v.ciudad}</span>` : ''}</td>
+                        <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
+                        <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)'}</td>
+                        <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
+                        <td class="p-2">
+                            <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoPago('${v.id}', this.value)">
+                                <option value="Pendiente" ${v.estado === 'Pendiente' ? 'selected' : ''}>📦 Pendiente</option>
+                                <option value="Pagado" ${v.estado === 'Pagado' ? 'selected' : ''}>✅ Pagado</option>
+                                <option value="Devuelto" ${v.estado === 'Devuelto' ? 'selected' : ''}>❌ Devuelto</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoEnvio('${v.id}', this.value)">
+                                <option value="confirmado" ${v.estadoEnvio === 'confirmado' ? 'selected' : ''}>✅ Confirmado</option>
+                                <option value="preparando" ${v.estadoEnvio === 'preparando' ? 'selected' : ''}>📦 Preparando</option>
+                                <option value="enviado" ${v.estadoEnvio === 'enviado' ? 'selected' : ''}>🚚 En camino</option>
+                                <option value="entregado" ${v.estadoEnvio === 'entregado' ? 'selected' : ''}>🏠 Entregado</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <input type="text" id="guia_${i}" value="${v.numeroGuia || ''}" placeholder="N° guía" class="guia-input" onblur="actualizarGuia('${v.id}', this.value)">
+                        </td>
+                        <td class="p-2">
+                            <select id="transportadora_${i}" class="transportadora-select" onchange="actualizarTransportadora('${v.id}', this.value)">
+                                <option value="">Seleccionar</option>
+                                <option value="Interrapidísimo" ${v.transportadora === 'Interrapidísimo' ? 'selected' : ''}>Interrapidísimo</option>
+                                <option value="Servientrega" ${v.transportadora === 'Servientrega' ? 'selected' : ''}>Servientrega</option>
+                                <option value="Envíos Nacionales" ${v.transportadora === 'Envíos Nacionales' ? 'selected' : ''}>Envíos Nacionales</option>
+                                <option value="Coordinadora" ${v.transportadora === 'Coordinadora' ? 'selected' : ''}>Coordinadora</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <div class="flex gap-2">
+                                <button onclick="toggleDetalles(${i})" class="text-blue-600 text-sm hover:text-blue-800" title="Ver detalles">
+                                    <i class="fas fa-chevron-down" id="flecha_${i}"></i>
+                                </button>
+                                <button onclick="eliminarVenta('${v.id}')" class="text-red-500 text-sm hover:text-red-700" title="Eliminar venta">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                <button onclick="enviarGuiaPorWhatsApp('${v.telefono || v.datosEnvio?.telefono || ''}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}', '${v.usuario || 'Cliente'}')" 
+                                    class="text-green-600 text-sm hover:text-green-800" title="Enviar guía por WhatsApp"
+                                    ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                                <button onclick="enviarCorreoGuiaManual('${v.id}', '${v.email}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}')" 
+                                    class="text-blue-600 text-sm hover:text-blue-800" title="Enviar correo con guía"
+                                    ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="detalles_${i}" class="hidden bg-gray-50">
+                        <td colspan="10" class="p-4">
+                            <div class="border rounded-lg p-4 bg-white">
+                                <h4 class="font-bold mb-2">📋 Detalles del pedido</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="p-2 text-left">Producto</th>
+                                                <th class="p-2 text-left">Color</th>
+                                                <th class="p-2 text-left">Talla</th>
+                                                <th class="p-2 text-left">Cantidad</th>
+                                                <th class="p-2 text-left">Precio unitario</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${(v.productos || []).map(prod => `
+                                                <tr class="border-b">
+                                                    <td class="p-2">${prod.nombre || prod.NOMBRE}</td>
+                                                    <td class="p-2">${prod.colorNombre || prod.COLORNOMBRE || prod.color}</td>
+                                                    <td class="p-2">${prod.talla || 'N/A'}</td>
+                                                    <td class="p-2">${prod.cantidad}</td>
+                                                    <td class="p-2">$${(prod.precio || prod.PRECIO || 0).toLocaleString()}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                ${v.datosEnvio ? `
+                                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                                    <p class="font-semibold text-sm mb-1">📍 Dirección de envío:</p>
+                                    <p class="text-sm">${v.datosEnvio.direccion}, ${v.datosEnvio.ciudad} - ${v.datosEnvio.tipoVivienda || 'Casa'}</p>
+                                    <p class="text-sm mt-1">📞 Teléfono: ${v.datosEnvio.telefono}</p>
+                                </div>
+                                ` : ''}
+                                ${v.descuento > 0 ? `
+                                <div class="mt-3 p-3 bg-green-50 rounded-lg">
+                                    <p class="font-semibold text-sm text-green-700">🎉 Descuento aplicado: -$${v.descuento.toLocaleString()}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            ventasHtml += `</tbody></table>`;
             document.getElementById('listaVentas').innerHTML = ventasHtml;
         } catch (error) {
             console.error("Error cargando ventas:", error);
@@ -259,22 +347,102 @@
         }
     }
     
-    window.actualizarEstado = async function(id, nuevoEstado) {
+    window.toggleDetalles = function(index) {
+        const detallesRow = document.getElementById(`detalles_${index}`);
+        const flecha = document.getElementById(`flecha_${index}`);
+        
+        if (detallesRow.classList.contains('hidden')) {
+            detallesRow.classList.remove('hidden');
+            flecha.classList.remove('fa-chevron-down');
+            flecha.classList.add('fa-chevron-up');
+        } else {
+            detallesRow.classList.add('hidden');
+            flecha.classList.remove('fa-chevron-up');
+            flecha.classList.add('fa-chevron-down');
+        }
+    };
+    
+    window.cambiarEstadoPago = async function(id, nuevoEstado) {
+        await actualizarVentaFirestore(id, { estado: nuevoEstado });
+        await cargarVentas();
+    };
+    
+    window.cambiarEstadoEnvio = async function(id, nuevoEstado) {
         await actualizarVentaFirestore(id, { estadoEnvio: nuevoEstado });
         await cargarVentas();
-        alert("Estado actualizado");
+    };
+    
+    window.actualizarGuia = async function(id, numeroGuia) {
+        await actualizarVentaFirestore(id, { numeroGuia: numeroGuia });
+        await cargarVentas();
+    };
+    
+    window.actualizarTransportadora = async function(id, transportadora) {
+        await actualizarVentaFirestore(id, { transportadora: transportadora });
+        await cargarVentas();
     };
     
     window.eliminarVenta = async function(id) {
         if (confirm('¿Eliminar esta venta?')) {
             await eliminarVentaFirestore(id);
             await cargarVentas();
-            alert("Venta eliminada");
         }
     };
     
-    window.verDetalleVenta = function(id) {
-        alert("Detalle de venta: " + id + "\n\n(La función de detalle se puede implementar después)");
+    window.enviarGuiaPorWhatsApp = function(telefono, numeroPedido, numeroGuia, transportadora, nombreCliente) {
+        if (!telefono) {
+            alert('❌ No hay número de teléfono registrado');
+            return;
+        }
+        if (!numeroGuia) {
+            alert('❌ Primero registra el número de guía');
+            return;
+        }
+        
+        let telefonoLimpio = telefono.toString().replace(/[^0-9]/g, '');
+        if (telefonoLimpio.length === 10) telefonoLimpio = '57' + telefonoLimpio;
+        
+        let linkRastreo = '#';
+        if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+        else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+        else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+        else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
+        
+        const primerNombre = nombreCliente ? nombreCliente.split(' ')[0] : 'Cliente';
+        const mensaje = `*L U M A*\n\n¡Hola ${primerNombre}! Tu pedido *${numeroPedido}* ya está en camino.\n\n*GUÍA:* ${numeroGuia}\n*TRANSPORTADORA:* ${transportadora}\n\n*RASTREA AQUÍ:*\n${linkRastreo}\n\n*O VISITA:*\nhttps://jossuarezj.github.io/luma-tienda/seguimiento.html?pedido=${numeroPedido}`;
+        
+        window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    };
+    
+    window.enviarCorreoGuiaManual = async function(id, email, numeroPedido, numeroGuia, transportadora) {
+        if (!numeroGuia) {
+            alert('❌ Primero registra el número de guía');
+            return;
+        }
+        if (!transportadora) {
+            alert('❌ Primero selecciona la transportadora');
+            return;
+        }
+        
+        let linkRastreo = '#';
+        if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+        else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+        else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+        else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
+        
+        try {
+            await emailjs.send('service_nfns0rk', 'template_lykb5bb', {
+                email_cliente: email,
+                numeroPedido: numeroPedido,
+                numeroGuia: numeroGuia,
+                transportadora: transportadora,
+                linkRastreo: linkRastreo
+            });
+            alert('✅ Correo enviado exitosamente');
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error al enviar correo');
+        }
     };
     
     function cargarCupones() {
