@@ -1103,7 +1103,7 @@ window.confirmarPedidoFinal = function(datosStr) {
     })();
     
     // ✅ LUEGO: Finalizar compra (esto limpia el carrito)
-    finalizarCompraConDatosEnvio(datos);
+    window.finalizarCompraConDatosEnvio(datos);
     cerrarModalEnvio();
     
     // Recargar la página para actualizar el estado
