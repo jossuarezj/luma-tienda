@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LUMA - Panel de Administración</title>
 
-    <!-- FAVICON -->
     <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
     <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
     <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
@@ -21,17 +20,13 @@
         .btn-cocoa { background: #4d4845; color: white; padding: 10px 20px; border-radius: 30px; transition: all 0.3s; cursor: pointer; }
         .btn-cocoa:hover { background: #4a2e24; transform: scale(1.02); }
         .cupon { background: #f0f0f0; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .estado-pendiente { background: #f39c12; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        .estado-entregado { background: #27ae60; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        .estado-devuelto { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-        select, input { cursor: pointer; }
-        .guia-input { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
-        .transportadora-select { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
         .table-scroll { overflow-x: auto; }
         table { min-width: 1000px; }
         .logout-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; }
         .logout-btn:hover { text-decoration: underline; }
         #loginError { color: #e74c3c; font-size: 14px; margin-top: 10px; }
+        .guia-input { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .transportadora-select { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -99,7 +94,9 @@
     <!-- Lista de Ventas -->
     <div class="card mb-8">
         <h2 class="text-xl font-bold mb-4"><i class="fas fa-receipt mr-2"></i>Historial de Ventas</h2>
-        <div id="listaVentas" class="table-scroll"></div>
+        <div id="listaVentas" class="table-scroll">
+            <p class="text-gray-500">Cargando ventas...</p>
+        </div>
     </div>
     
     <!-- Lista de Clientes -->
@@ -119,13 +116,12 @@
     })();
 </script>
 
-<!-- Script principal con Firebase -->
 <script type="module">
     import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './js/firebase-config.js';
+    import { cargarVentasFirestore, actualizarVentaFirestore, eliminarVentaFirestore } from './js/firebase-ventas.js';
     
     const ADMIN_EMAIL = "info@lumacolombia.com";
     
-    // Función de login
     window.loginAdmin = async function() {
         const email = document.getElementById('adminEmail').value;
         const password = document.getElementById('adminPassword').value;
@@ -152,12 +148,10 @@
         }
     };
     
-    // Función de logout
     window.logoutAdmin = async function() {
         await signOut(auth);
     };
     
-    // Verificar estado de autenticación
     onAuthStateChanged(auth, (user) => {
         if (user && user.email === ADMIN_EMAIL) {
             document.getElementById('loginScreen').style.display = 'none';
@@ -174,9 +168,9 @@
         }
     });
     
-    function cargarDatos() {
+    async function cargarDatos() {
         cargarClientes();
-        cargarVentas();
+        await cargarVentas();
         cargarCupones();
     }
     
@@ -199,25 +193,98 @@
             clientes.splice(index, 1);
             localStorage.setItem('lumaClientes', JSON.stringify(clientes));
             cargarClientes();
-            cargarVentas();
         }
     };
     
-    function cargarVentas() {
-        let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-        const totalVentas = compras.length;
-        const entregados = compras.filter(v => v.estadoEnvio === 'entregado').length;
-        const ingresos = compras.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + v.total, 0);
-        
-        document.getElementById('totalVentas').innerText = totalVentas;
-        document.getElementById('totalEntregados').innerText = entregados;
-        document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
-        document.getElementById('listaVentas').innerHTML = `<p class="text-gray-500">${compras.length} ventas registradas</p>`;
+    async function cargarVentas() {
+        try {
+            const ventas = await cargarVentasFirestore();
+            console.log("Ventas cargadas:", ventas.length);
+            
+            const totalVentas = ventas.length;
+            const entregados = ventas.filter(v => v.estadoEnvio === 'entregado').length;
+            const ingresos = ventas.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + (v.total || 0), 0);
+            
+            document.getElementById('totalVentas').innerText = totalVentas;
+            document.getElementById('totalEntregados').innerText = entregados;
+            document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
+            
+            if (ventas.length === 0) {
+                document.getElementById('listaVentas').innerHTML = '<p class="text-gray-500">No hay ventas registradas</p>';
+                return;
+            }
+            
+            const ventasHtml = `
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2 text-left">N° Pedido</th>
+                            <th class="p-2 text-left">Cliente</th>
+                            <th class="p-2 text-left">Fecha</th>
+                            <th class="p-2 text-left">Método</th>
+                            <th class="p-2 text-left">Total</th>
+                            <th class="p-2 text-left">Estado</th>
+                            <th class="p-2 text-left">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ventas.map((v, idx) => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
+                                <td class="p-2">${v.usuario || v.email}</td>
+                                <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
+                                <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta'}</td>
+                                <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
+                                <td class="p-2">
+                                    <select onchange="actualizarEstado('${v.id}', this.value)" class="border rounded px-2 py-1 text-xs">
+                                        <option value="confirmado" ${v.estadoEnvio === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+                                        <option value="preparando" ${v.estadoEnvio === 'preparando' ? 'selected' : ''}>Preparando</option>
+                                        <option value="enviado" ${v.estadoEnvio === 'enviado' ? 'selected' : ''}>Enviado</option>
+                                        <option value="entregado" ${v.estadoEnvio === 'entregado' ? 'selected' : ''}>Entregado</option>
+                                    </select>
+                                </td>
+                                <td class="p-2">
+                                    <button onclick="verDetalleVenta('${v.id}')" class="text-blue-600 text-sm hover:text-blue-800 mr-2">Ver</button>
+                                    <button onclick="eliminarVenta('${v.id}')" class="text-red-500 text-sm hover:text-red-700">Eliminar</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('listaVentas').innerHTML = ventasHtml;
+        } catch (error) {
+            console.error("Error cargando ventas:", error);
+            document.getElementById('listaVentas').innerHTML = '<p class="text-red-500">Error al cargar ventas</p>';
+        }
     }
+    
+    window.actualizarEstado = async function(id, nuevoEstado) {
+        await actualizarVentaFirestore(id, { estadoEnvio: nuevoEstado });
+        await cargarVentas();
+        alert("Estado actualizado");
+    };
+    
+    window.eliminarVenta = async function(id) {
+        if (confirm('¿Eliminar esta venta?')) {
+            await eliminarVentaFirestore(id);
+            await cargarVentas();
+            alert("Venta eliminada");
+        }
+    };
+    
+    window.verDetalleVenta = function(id) {
+        alert("Detalle de venta: " + id + "\n\n(La función de detalle se puede implementar después)");
+    };
     
     function cargarCupones() {
         const cupones = JSON.parse(localStorage.getItem('lumaCupones')) || { "BIENVENIDA30": { tipo: "porcentaje", valor: 30, usado: false } };
-        const cuponesHtml = Object.entries(cupones).map(([codigo, cupon]) => `<div class="cupon"><div><span class="font-bold">${codigo}</span> - ${cupon.valor}% OFF ${cupon.usado ? '(Usado)' : '(Activo)'}</div><button onclick="eliminarCupon('${codigo}')" class="text-red-500"><i class="fas fa-trash"></i></button></div>`).join('');
+        const cuponesHtml = Object.entries(cupones).map(([codigo, cupon]) => `
+            <div class="cupon">
+                <div><span class="font-bold">${codigo}</span> - ${cupon.valor}% OFF ${cupon.usado ? '(Usado)' : '(Activo)'}</div>
+                <button onclick="eliminarCupon('${codigo}')" class="text-red-500"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('');
         document.getElementById('listaCupones').innerHTML = cuponesHtml || '<p class="text-gray-500">No hay cupones</p>';
     }
     
