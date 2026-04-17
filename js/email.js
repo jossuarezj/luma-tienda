@@ -83,6 +83,8 @@ export async function enviarCorreoConfirmacion(datosCompra) {
     const templateParams = {
         nombre: datosCompra.nombre || datosCompra.usuario || datosCompra.nombreCliente || 'Cliente',
         numeroPedido: datosCompra.numeroPedido || 'LUMA-' + Date.now(),
+        subtotal: datosCompra.subtotal ? datosCompra.subtotal.toLocaleString() : '0',
+        costoEnvio: datosCompra.envioGratis ? 'GRATIS' : `$${(datosCompra.costoEnvio || 0).toLocaleString()}`,
         total: datosCompra.total ? datosCompra.total.toLocaleString() : '0',
         metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta de crédito (ePayco)' : 'Contra entrega (efectivo)',
         direccion: direccion,
