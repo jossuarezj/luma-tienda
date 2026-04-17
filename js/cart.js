@@ -282,11 +282,20 @@ export function getResumenPedido() {
 }
 
 export async function finalizarCompraConDatosEnvio(datos) {
+    console.log("🚀 INICIANDO finalizarCompraConDatosEnvio");
+    
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        console.log("❌ Usuario no logueado");
+        return;
+    }
+    console.log("✅ Usuario:", user.name);
     
     const itemsVisibles = cart.filter(item => !item.esParteDePack);
+    console.log("📦 itemsVisibles:", itemsVisibles.length);
+    
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+    console.log("💰 Subtotal:", subtotal);
     
     let descuento = 0;
     const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
@@ -296,10 +305,13 @@ export async function finalizarCompraConDatosEnvio(datos) {
     } else if (user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
         descuento = subtotal * 0.3;
     }
+    console.log("🏷️ Descuento:", descuento);
     
     const envioGratisCalc = subtotal >= UMBRAL_ENVIO_GRATIS;
     const costoEnvioActual = envioGratisCalc ? 0 : 17500;
     const total = subtotal - descuento + costoEnvioActual;
+    console.log("📦 Envío:", costoEnvioActual);
+    console.log("💰 Total:", total);
     
     // Guardar detalles de packs
     const itemsParaGuardar = itemsVisibles.map(item => {
@@ -334,32 +346,44 @@ export async function finalizarCompraConDatosEnvio(datos) {
         fecha: new Date().toISOString()
     };
     
-            // Guardar en Firestore
-            const ventaId = await guardarVentaFirestore(ventaData);
-
-        // Guardar en localStorage como respaldo
-            let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-                compras.push({ ...ventaData, idFirestore: ventaId });
-                localStorage.setItem('lumaCompras', JSON.stringify(compras));
-
-                // ✅ LIMPIAR CARRITO COMPLETAMENTE
-            cart = [];
-            localStorage.removeItem('lumaCart');
-            saveCart();
-
-            // Mostrar modal de confirmación
-            mostrarModalConfirmacion(user, itemsVisibles, subtotal, descuento, costoEnvioActual, total, datos);
-
-            // Cerrar sidebar del carrito
-            const cartSidebar = document.getElementById('cartSidebar');
-            const cartOverlay = document.getElementById('cartOverlay');
-            if (cartSidebar) cartSidebar.classList.add('translate-x-full');
-            if (cartOverlay) cartOverlay.classList.add('hidden');
-
-        // Recargar la página después de 2 segundos para actualizar todo
-        setTimeout(() => {
-                window.location.reload();
-        }, 2000);
+    console.log("📝 ventaData preparada:", ventaData.numeroPedido);
+    
+    // Guardar en Firestore
+    try {
+        console.log("💾 Intentando guardar en Firestore...");
+        const ventaId = await guardarVentaFirestore(ventaData);
+        console.log("✅ Venta guardada en Firestore con ID:", ventaId);
+    } catch (error) {
+        console.error("❌ Error guardando en Firestore:", error);
+    }
+    
+    // Guardar en localStorage como respaldo
+    let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
+    compras.push({ ...ventaData, idFirestore: ventaId });
+    localStorage.setItem('lumaCompras', JSON.stringify(compras));
+    console.log("💾 Guardado en localStorage. Total compras:", compras.length);
+    
+    // ✅ LIMPIAR CARRITO COMPLETAMENTE
+    cart = [];
+    localStorage.removeItem('lumaCart');
+    saveCart();
+    console.log("🗑️ Carrito limpiado");
+    
+    // Mostrar modal de confirmación
+    mostrarModalConfirmacion(user, itemsVisibles, subtotal, descuento, costoEnvioActual, total, datos);
+    console.log("🔄 Modal mostrado");
+    
+    // Cerrar sidebar del carrito
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartOverlay = document.getElementById('cartOverlay');
+    if (cartSidebar) cartSidebar.classList.add('translate-x-full');
+    if (cartOverlay) cartOverlay.classList.add('hidden');
+    
+    // Recargar la página después de 3 segundos
+    console.log("⏳ Recargando en 3 segundos...");
+    setTimeout(() => {
+        window.location.href = window.location.pathname;
+    }, 3000);
 }
 
 function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, total, datos) {
