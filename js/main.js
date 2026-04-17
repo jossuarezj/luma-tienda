@@ -684,6 +684,10 @@ window.verProducto = function(productId) {
     const modalContent = document.getElementById('productModalContent');
     if (!modalContent) return;
     
+    // ✅ GUARDAR REFERENCIAS GLOBALES AL PRINCIPIO
+    window.imagenesActualesModal = imagenesArray;
+    window.imagenActualIndexModal = imagenActual;
+    
     const primeraImagen = imagenesArray[0] || imagen;
     
     modalContent.innerHTML = `
@@ -749,10 +753,6 @@ window.verProducto = function(productId) {
             </div>
         </div>
     `;
-    
-    // Guardar referencias para el lightbox
-    window.imagenesActualesModal = imagenesArray;
-    window.imagenActualIndexModal = imagenActual;
 }
     
     window.modalState = {
@@ -848,25 +848,30 @@ window.cambiarImagenModal = function(direccion) {
 
 window.cambiarImagenModalA = function(idx) {
     console.log("🖼️ cambiarImagenModalA:", idx);
+    console.log("imagenesActualesModal:", window.imagenesActualesModal);
     
-    if (window.imagenesActualesModal && window.imagenesActualesModal.length > 0 && idx < window.imagenesActualesModal.length) {
-        window.imagenActualIndexModal = idx;
-        const imgPrincipal = document.getElementById('modalImagenPrincipal');
-        if (imgPrincipal) imgPrincipal.src = window.imagenesActualesModal[idx];
-        
-        // Actualizar borde de miniaturas
-        const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
-        miniaturas.forEach((img, i) => {
-            if (i === idx) {
-                img.classList.add('border-[#4d4845]', 'border-2');
-                img.classList.remove('border-transparent');
-            } else {
-                img.classList.remove('border-[#4d4845]', 'border-2');
-                img.classList.add('border-transparent');
-            }
-        });
+    if (window.imagenesActualesModal && window.imagenesActualesModal.length > 0) {
+        if (idx < window.imagenesActualesModal.length) {
+            window.imagenActualIndexModal = idx;
+            const imgPrincipal = document.getElementById('modalImagenPrincipal');
+            if (imgPrincipal) imgPrincipal.src = window.imagenesActualesModal[idx];
+            
+            // Actualizar borde de miniaturas
+            const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
+            miniaturas.forEach((img, i) => {
+                if (i === idx) {
+                    img.classList.add('border-[#4d4845]', 'border-2');
+                    img.classList.remove('border-transparent');
+                } else {
+                    img.classList.remove('border-[#4d4845]', 'border-2');
+                    img.classList.add('border-transparent');
+                }
+            });
+        } else {
+            console.warn("Índice fuera de rango:", idx);
+        }
     } else {
-        console.warn("No hay imágenes disponibles o índice inválido:", idx);
+        console.error("❌ window.imagenesActualesModal no está definido");
     }
 };
 
