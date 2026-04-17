@@ -1119,18 +1119,25 @@ window.confirmarPedidoFinal = function(datosStr) {
                 precio: item.precio
             }));
             
-            const userActual = getCurrentUser(); // Obtener el usuario logueado
+            const userActual = getCurrentUser();
+
+            // Calcular envío (gratis si subtotal >= 99990)
+            const envioGratis = subtotal >= 99990;
+            const costoEnvio = envioGratis ? 0 : 17500;
 
             const datosCorreo = {
-                    nombre: datos.nombre,
-                    email: userActual?.email || 'cliente@email.com',  // ← Email del cliente logueado
-                    numeroPedido: 'LUMA-' + Date.now(),
-                    total: total,
-                    metodoPago: 'contraentrega',
-                    direccion: datos.direccion,
-                    ciudad: datos.ciudad,
-                    productos: productosCorreo
-                };
+                nombre: datos.nombre,
+                email: userActual?.email || 'cliente@email.com',
+                numeroPedido: 'LUMA-' + Date.now(),
+                subtotal: subtotal,
+                costoEnvio: costoEnvio,  // ← AGREGAR
+                envioGratis: envioGratis, // ← AGREGAR
+                total: total,
+                metodoPago: 'contraentrega',
+                direccion: datos.direccion,
+                ciudad: datos.ciudad,
+                productos: productosCorreo
+            };
             
             await enviarCorreoConfirmacion(datosCorreo);
             console.log('✅ Correo contraentrega enviado a:', datosCorreo.email);
