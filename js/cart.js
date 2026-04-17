@@ -349,9 +349,10 @@ export async function finalizarCompraConDatosEnvio(datos) {
     console.log("📝 ventaData preparada:", ventaData.numeroPedido);
     
     // Guardar en Firestore
+    let ventaId = null;
     try {
         console.log("💾 Intentando guardar en Firestore...");
-        const ventaId = await guardarVentaFirestore(ventaData);
+        ventaId = await guardarVentaFirestore(ventaData);
         console.log("✅ Venta guardada en Firestore con ID:", ventaId);
     } catch (error) {
         console.error("❌ Error guardando en Firestore:", error);
@@ -359,7 +360,7 @@ export async function finalizarCompraConDatosEnvio(datos) {
     
     // Guardar en localStorage como respaldo
     let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-    compras.push({ ...ventaData, idFirestore: ventaId });
+    compras.push({ ...ventaData, idFirestore: ventaId || 'no-firestore' });
     localStorage.setItem('lumaCompras', JSON.stringify(compras));
     console.log("💾 Guardado en localStorage. Total compras:", compras.length);
     
