@@ -1109,7 +1109,7 @@ window.confirmarPedidoFinal = function(datosStr) {
     // Recargar la página para actualizar el estado
     setTimeout(() => {
         window.location.reload();
-    }, 500);
+    }, 10000);
 };
 
 
