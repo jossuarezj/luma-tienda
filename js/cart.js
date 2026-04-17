@@ -334,24 +334,32 @@ export async function finalizarCompraConDatosEnvio(datos) {
         fecha: new Date().toISOString()
     };
     
-    // Guardar en Firestore
-    const ventaId = await guardarVentaFirestore(ventaData);
-    
-    // Guardar en localStorage como respaldo
-    let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-    compras.push({ ...ventaData, idFirestore: ventaId });
-    localStorage.setItem('lumaCompras', JSON.stringify(compras));
-    
-    // Limpiar carrito
-    cart = [];
-    saveCart();
-    
-    mostrarModalConfirmacion(user, itemsVisibles, subtotal, descuento, costoEnvioActual, total, datos);
-    
-    const cartSidebar = document.getElementById('cartSidebar');
-    const cartOverlay = document.getElementById('cartOverlay');
-    if (cartSidebar) cartSidebar.classList.add('translate-x-full');
-    if (cartOverlay) cartOverlay.classList.add('hidden');
+            // Guardar en Firestore
+            const ventaId = await guardarVentaFirestore(ventaData);
+
+        // Guardar en localStorage como respaldo
+            let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
+                compras.push({ ...ventaData, idFirestore: ventaId });
+                localStorage.setItem('lumaCompras', JSON.stringify(compras));
+
+                // ✅ LIMPIAR CARRITO COMPLETAMENTE
+            cart = [];
+            localStorage.removeItem('lumaCart');
+            saveCart();
+
+            // Mostrar modal de confirmación
+            mostrarModalConfirmacion(user, itemsVisibles, subtotal, descuento, costoEnvioActual, total, datos);
+
+            // Cerrar sidebar del carrito
+            const cartSidebar = document.getElementById('cartSidebar');
+            const cartOverlay = document.getElementById('cartOverlay');
+            if (cartSidebar) cartSidebar.classList.add('translate-x-full');
+            if (cartOverlay) cartOverlay.classList.add('hidden');
+
+        // Recargar la página después de 2 segundos para actualizar todo
+        setTimeout(() => {
+                window.location.reload();
+        }, 2000);
 }
 
 function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, total, datos) {
