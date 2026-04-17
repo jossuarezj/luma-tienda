@@ -122,9 +122,10 @@ export function updateCartUI() {
                 <p class="text-[#4d4845] font-bold">$${item.precio.toLocaleString()}</p>
                 ${item.talla && !item.esPack ? `<p class="text-xs text-gray-400">Talla: ${item.talla}</p>` : ''}
                 <div class="flex items-center gap-3 mt-2">
-                    <button onclick="window.updateQty('${item.id}', ${item.cantidad-1}, '${item.talla || ''}', ${item.esPack})" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200">-</button>
-                    <button onclick="window.updateQty('${item.id}', ${item.cantidad+1}, '${item.talla || ''}', ${item.esPack})" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200">+</button>
-                    <button onclick="window.removeItem('${item.id}', '${item.talla || ''}', ${item.esPack})" class="ml-auto text-red-400 text-sm hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                <button onclick="window.updateQty('${item.id}', ${item.cantidad-1}, '${item.talla || ''}', ${item.esPack})" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200">-</button>
+                <span class="text-sm font-bold w-6 text-center text-[#4d4845]">${item.cantidad}</span>
+                <button onclick="window.updateQty('${item.id}', ${item.cantidad+1}, '${item.talla || ''}', ${item.esPack})" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200">+</button>
+                <button onclick="window.removeItem('${item.id}', '${item.talla || ''}', ${item.esPack})" class="ml-auto text-red-400 text-sm hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
                 </div>
             </div>
         </div>
