@@ -820,13 +820,14 @@ window.cambiarCantidadModal = function(delta) {
 };
 
 window.cambiarImagenModal = function(direccion) {
-    if (window.modalState && window.modalState.imagenes) {
-        let nuevaImagen = window.modalState.imagenActual + direccion;
-        if (nuevaImagen >= 0 && nuevaImagen < window.modalState.imagenes.length) {
-            window.modalState.imagenActual = nuevaImagen;
+    console.log("🖼️ cambiarImagenModal:", direccion);
+    
+    if (window.imagenesActualesModal && window.imagenesActualesModal.length > 0) {
+        let nuevaImagen = window.imagenActualIndexModal + direccion;
+        if (nuevaImagen >= 0 && nuevaImagen < window.imagenesActualesModal.length) {
             window.imagenActualIndexModal = nuevaImagen;
             const imgPrincipal = document.getElementById('modalImagenPrincipal');
-            if (imgPrincipal) imgPrincipal.src = window.modalState.imagenes[nuevaImagen];
+            if (imgPrincipal) imgPrincipal.src = window.imagenesActualesModal[nuevaImagen];
             
             // Actualizar borde de miniaturas
             const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
@@ -840,15 +841,18 @@ window.cambiarImagenModal = function(direccion) {
                 }
             });
         }
+    } else {
+        console.warn("No hay imágenes disponibles");
     }
 };
 
 window.cambiarImagenModalA = function(idx) {
-    if (window.modalState && window.modalState.imagenes && idx < window.modalState.imagenes.length) {
-        window.modalState.imagenActual = idx;
+    console.log("🖼️ cambiarImagenModalA:", idx);
+    
+    if (window.imagenesActualesModal && window.imagenesActualesModal.length > 0 && idx < window.imagenesActualesModal.length) {
         window.imagenActualIndexModal = idx;
         const imgPrincipal = document.getElementById('modalImagenPrincipal');
-        if (imgPrincipal) imgPrincipal.src = window.modalState.imagenes[idx];
+        if (imgPrincipal) imgPrincipal.src = window.imagenesActualesModal[idx];
         
         // Actualizar borde de miniaturas
         const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
@@ -861,6 +865,8 @@ window.cambiarImagenModalA = function(idx) {
                 img.classList.add('border-transparent');
             }
         });
+    } else {
+        console.warn("No hay imágenes disponibles o índice inválido:", idx);
     }
 };
 
