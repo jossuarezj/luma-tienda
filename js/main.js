@@ -681,60 +681,79 @@ window.verProducto = function(productId) {
     }
     
     function renderModal() {
-        const modalContent = document.getElementById('productModalContent');
-        if (!modalContent) return;
-        
-        const primeraImagen = imagenesArray[0] || imagen;
-        
-        modalContent.innerHTML = `
-            <div class="grid md:grid-cols-2 gap-4 md:gap-6">
-                <div>
-                    <div class="relative">
-                        <img id="modalImagenPrincipal" src="${primeraImagen}" 
-                             class="w-full h-auto max-h-[50vh] md:max-h-96 object-contain rounded-2xl cursor-pointer bg-[#F9F6F0]">
-                    </div>
+    const modalContent = document.getElementById('productModalContent');
+    if (!modalContent) return;
+    
+    const primeraImagen = imagenesArray[0] || imagen;
+    
+    modalContent.innerHTML = `
+        <div class="grid md:grid-cols-2 gap-4 md:gap-6">
+            <div>
+                <div class="relative">
+                    <img id="modalImagenPrincipal" src="${primeraImagen}" 
+                         class="w-full h-auto max-h-[50vh] md:max-h-96 object-contain rounded-2xl cursor-pointer bg-[#F9F6F0]"
+                         onclick="abrirLightbox(window.imagenesActualesModal, window.imagenActualIndexModal)">
+                    
+                    ${imagenesArray.length > 1 ? `
+                        <button onclick="cambiarImagenModal(-1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white z-10 shadow-md">‹</button>
+                        <button onclick="cambiarImagenModal(1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-8 h-8 flex items-center justify-center hover:bg-white z-10 shadow-md">›</button>
+                    ` : ''}
                 </div>
-                <div>
-                    <h2 class="text-2xl md:text-3xl font-bold">${nombre}</h2>
-                    <p class="text-[#7B7369] text-sm md:text-base mt-1">${colorNombre}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">SKU: ${sku}</p>
-                    <div class="mt-4">
-                        ${precioOferta ? `
-                            <div class="flex items-center gap-3 flex-wrap">
-                                <p class="text-[#7B7369] text-lg md:text-xl line-through">$${precio.toLocaleString()}</p>
-                                <p class="text-2xl md:text-3xl font-bold text-[#4d4845]">$${precioOferta.toLocaleString()}</p>
-                                <span class="bg-[#F7EBEB] text-[#4d4845] text-xs md:text-sm px-2 py-1 rounded-full">-${Math.round((1 - precioOferta/precio) * 100)}%</span>
-                            </div>
-                        ` : `
-                            <p class="text-2xl md:text-3xl font-bold text-[#4d4845]">$${precio.toLocaleString()}</p>
-                        `}
+                
+                ${imagenesArray.length > 1 ? `
+                    <div class="flex gap-2 mt-3 overflow-x-auto pb-2">
+                        ${imagenesArray.map((img, idx) => `
+                            <img src="${img}" class="w-16 h-16 md:w-20 md:h-20 object-cover rounded-xl cursor-pointer border-2 flex-shrink-0 ${idx === imagenActual ? 'border-[#4d4845]' : 'border-transparent'} hover:opacity-80 transition" 
+                                 onclick="cambiarImagenModalA(${idx})">
+                        `).join('')}
                     </div>
-                    <div class="mt-4">
-                        <p class="text-[#7B7369] text-sm md:text-base">${descripcion}</p>
-                    </div>
-                    <div class="mt-6">
-                        <p class="font-semibold mb-2">Talla:</p>
-                        <div class="flex gap-2 md:gap-3 flex-wrap">
-                            ${tallasArray.map(t => `
-                                <button onclick="seleccionarTallaModal('${t}')" class="talla-modal-btn w-14 md:w-16 py-2 rounded-full border border-[#7B7369] ${tallaSeleccionada === t ? 'bg-[#F5ECDC] text-[#4d4845]' : 'bg-white text-[#4d4845]'}">
-                                    ${t}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="mt-6">
-                        <p class="font-semibold mb-2">Cantidad:</p>
-                        <div class="flex items-center gap-3">
-                            <button onclick="cambiarCantidadModal(-1)" class="w-8 h-8 rounded-full bg-gray-100">-</button>
-                            <span id="modalCantidad" class="text-xl font-semibold w-12 text-center">${cantidadSeleccionada}</span>
-                            <button onclick="cambiarCantidadModal(1)" class="w-8 h-8 rounded-full bg-gray-100">+</button>
-                        </div>
-                    </div>
-                    <button onclick="agregarAlCarritoDesdeModal()" class="btn-primary w-full py-3 rounded-full font-semibold mt-6">Agregar al carrito</button>
-                </div>
+                ` : ''}
             </div>
-        `;
-    }
+            <div>
+                <h2 class="text-2xl md:text-3xl font-bold">${nombre}</h2>
+                <p class="text-[#7B7369] text-sm md:text-base mt-1">${colorNombre}</p>
+                <p class="text-[10px] text-gray-400 mt-1">SKU: ${sku}</p>
+                <div class="mt-4">
+                    ${precioOferta ? `
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <p class="text-[#7B7369] text-lg md:text-xl line-through">$${precio.toLocaleString()}</p>
+                            <p class="text-2xl md:text-3xl font-bold text-[#4d4845]">$${precioOferta.toLocaleString()}</p>
+                            <span class="bg-[#F7EBEB] text-[#4d4845] text-xs md:text-sm px-2 py-1 rounded-full">-${Math.round((1 - precioOferta/precio) * 100)}%</span>
+                        </div>
+                    ` : `
+                        <p class="text-2xl md:text-3xl font-bold text-[#4d4845]">$${precio.toLocaleString()}</p>
+                    `}
+                </div>
+                <div class="mt-4">
+                    <p class="text-[#7B7369] text-sm md:text-base">${descripcion}</p>
+                </div>
+                <div class="mt-6">
+                    <p class="font-semibold mb-2">Talla:</p>
+                    <div class="flex gap-2 md:gap-3 flex-wrap">
+                        ${tallasArray.map(t => `
+                            <button onclick="seleccionarTallaModal('${t}')" class="talla-modal-btn w-14 md:w-16 py-2 rounded-full border border-[#7B7369] ${tallaSeleccionada === t ? 'bg-[#F5ECDC] text-[#4d4845]' : 'bg-white text-[#4d4845]'}">
+                                ${t}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <p class="font-semibold mb-2">Cantidad:</p>
+                    <div class="flex items-center gap-3">
+                        <button onclick="cambiarCantidadModal(-1)" class="w-8 h-8 rounded-full bg-gray-100">-</button>
+                        <span id="modalCantidad" class="text-xl font-semibold w-12 text-center">${cantidadSeleccionada}</span>
+                        <button onclick="cambiarCantidadModal(1)" class="w-8 h-8 rounded-full bg-gray-100">+</button>
+                    </div>
+                </div>
+                <button onclick="agregarAlCarritoDesdeModal()" class="btn-primary w-full py-3 rounded-full font-semibold mt-6">Agregar al carrito</button>
+            </div>
+        </div>
+    `;
+    
+    // Guardar referencias para el lightbox
+    window.imagenesActualesModal = imagenesArray;
+    window.imagenActualIndexModal = imagenActual;
+}
     
     window.modalState = {
         productId: id,
@@ -806,13 +825,13 @@ window.cambiarImagenModal = function(direccion) {
         if (nuevaImagen >= 0 && nuevaImagen < window.modalState.imagenes.length) {
             window.modalState.imagenActual = nuevaImagen;
             window.imagenActualIndexModal = nuevaImagen;
-            
             const imgPrincipal = document.getElementById('modalImagenPrincipal');
             if (imgPrincipal) imgPrincipal.src = window.modalState.imagenes[nuevaImagen];
             
+            // Actualizar borde de miniaturas
             const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
-            miniaturas.forEach((img, idx) => {
-                if (idx === nuevaImagen) {
+            miniaturas.forEach((img, i) => {
+                if (i === nuevaImagen) {
                     img.classList.add('border-[#4d4845]', 'border-2');
                     img.classList.remove('border-transparent');
                 } else {
@@ -828,10 +847,10 @@ window.cambiarImagenModalA = function(idx) {
     if (window.modalState && window.modalState.imagenes && idx < window.modalState.imagenes.length) {
         window.modalState.imagenActual = idx;
         window.imagenActualIndexModal = idx;
-        
         const imgPrincipal = document.getElementById('modalImagenPrincipal');
         if (imgPrincipal) imgPrincipal.src = window.modalState.imagenes[idx];
         
+        // Actualizar borde de miniaturas
         const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
         miniaturas.forEach((img, i) => {
             if (i === idx) {
