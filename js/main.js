@@ -1119,16 +1119,18 @@ window.confirmarPedidoFinal = function(datosStr) {
                 precio: item.precio
             }));
             
+            const userActual = getCurrentUser(); // Obtener el usuario logueado
+
             const datosCorreo = {
-                nombre: datos.nombre,
-                email: userEmail?.email || datos.email || 'cliente@email.com',
-                numeroPedido: 'LUMA-' + Date.now(),
-                total: total,
-                metodoPago: 'contraentrega',
-                direccion: datos.direccion,
-                ciudad: datos.ciudad,
-                productos: productosCorreo
-            };
+                    nombre: datos.nombre,
+                    email: userActual?.email || 'cliente@email.com',  // ← Email del cliente logueado
+                    numeroPedido: 'LUMA-' + Date.now(),
+                    total: total,
+                    metodoPago: 'contraentrega',
+                    direccion: datos.direccion,
+                    ciudad: datos.ciudad,
+                    productos: productosCorreo
+                };
             
             await enviarCorreoConfirmacion(datosCorreo);
             console.log('✅ Correo contraentrega enviado a:', datosCorreo.email);
