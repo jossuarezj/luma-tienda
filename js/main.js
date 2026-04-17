@@ -1652,73 +1652,84 @@ window.cambiarCantidadModal = function(delta) {
 // ==================== FUNCIONES PARA CAMBIAR IMÁGENES EN MODAL ====================
 
 window.cambiarImagenModal = function(direccion) {
-    console.log("🖼️ cambiarImagenModal:", direccion);
+    console.log("🖼️ Flecha:", direccion);
     
-    // Obtener imágenes desde la variable global
     const imagenes = window.imagenesActualesModal;
-    
-    if (!imagenes) {
-        console.error("❌ window.imagenesActualesModal no está definido");
-        return;
-    }
-    
-    if (imagenes.length === 0) {
-        console.warn("No hay imágenes disponibles");
-        return;
-    }
+    if (!imagenes || imagenes.length === 0) return;
     
     let nuevaImagen = window.imagenActualIndexModal + direccion;
-    if (nuevaImagen >= 0 && nuevaImagen < imagenes.length) {
-        window.imagenActualIndexModal = nuevaImagen;
-        
-        const imgPrincipal = document.getElementById('modalImagenPrincipal');
-        if (imgPrincipal) imgPrincipal.src = imagenes[nuevaImagen];
-        
-        // Actualizar borde de miniaturas
-        const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
-        miniaturas.forEach((img, i) => {
-            if (i === nuevaImagen) {
-                img.classList.add('border-[#4d4845]', 'border-2');
-                img.classList.remove('border-transparent');
-            } else {
-                img.classList.remove('border-[#4d4845]', 'border-2');
-                img.classList.add('border-transparent');
-            }
-        });
+    if (nuevaImagen < 0) nuevaImagen = imagenes.length - 1;
+    if (nuevaImagen >= imagenes.length) nuevaImagen = 0;
+    
+    window.imagenActualIndexModal = nuevaImagen;
+    if (window.modalState) window.modalState.imagenActual = nuevaImagen;
+    
+    let imgPrincipal = document.getElementById('modalImagenPrincipal');
+    if (!imgPrincipal) {
+        imgPrincipal = document.querySelector('#productModalContent img:first-child');
     }
+    
+    if (imgPrincipal) {
+        imgPrincipal.src = imagenes[nuevaImagen];
+    }
+    
+    // Actualizar miniaturas
+    const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
+    miniaturas.forEach((img, i) => {
+        if (i === nuevaImagen) {
+            img.classList.add('border-[#4d4845]', 'border-2');
+            img.classList.remove('border-transparent');
+        } else {
+            img.classList.remove('border-[#4d4845]', 'border-2');
+            img.classList.add('border-transparent');
+        }
+    });
 };
 
 window.cambiarImagenModalA = function(idx) {
-    console.log("🖼️ cambiarImagenModalA:", idx);
+    console.log("🖼️ Hiciste clic en miniatura:", idx);
     
-    // Obtener imágenes desde la variable global
     const imagenes = window.imagenesActualesModal;
-    
     if (!imagenes) {
-        console.error("❌ window.imagenesActualesModal no está definido");
+        console.error("❌ No hay imágenes guardadas");
         return;
     }
     
-    if (idx < imagenes.length) {
-        window.imagenActualIndexModal = idx;
-        
-        const imgPrincipal = document.getElementById('modalImagenPrincipal');
-        if (imgPrincipal) imgPrincipal.src = imagenes[idx];
-        
-        // Actualizar borde de miniaturas
-        const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
-        miniaturas.forEach((img, i) => {
-            if (i === idx) {
-                img.classList.add('border-[#4d4845]', 'border-2');
-                img.classList.remove('border-transparent');
-            } else {
-                img.classList.remove('border-[#4d4845]', 'border-2');
-                img.classList.add('border-transparent');
-            }
-        });
-    } else {
-        console.warn("Índice fuera de rango:", idx);
+    if (idx >= imagenes.length) {
+        console.warn("Índice fuera de rango");
+        return;
     }
+    
+    // Actualizar índice actual
+    window.imagenActualIndexModal = idx;
+    if (window.modalState) window.modalState.imagenActual = idx;
+    
+    // Buscar la imagen principal (puede tener diferentes IDs)
+    let imgPrincipal = document.getElementById('modalImagenPrincipal');
+    
+    // Si no existe, buscarla dentro del modal
+    if (!imgPrincipal) {
+        imgPrincipal = document.querySelector('#productModalContent img:first-child');
+    }
+    
+    if (imgPrincipal) {
+        imgPrincipal.src = imagenes[idx];
+        console.log("✅ Imagen cambiada a:", imagenes[idx]);
+    } else {
+        console.error("❌ No se encontró el elemento imgPrincipal");
+    }
+    
+    // Actualizar estilos de miniaturas
+    const miniaturas = document.querySelectorAll('#productModalContent .flex.gap-2 img');
+    miniaturas.forEach((img, i) => {
+        if (i === idx) {
+            img.classList.add('border-[#4d4845]', 'border-2');
+            img.classList.remove('border-transparent');
+        } else {
+            img.classList.remove('border-[#4d4845]', 'border-2');
+            img.classList.add('border-transparent');
+        }
+    });
 };
 
 // ==================== FIN ====================
