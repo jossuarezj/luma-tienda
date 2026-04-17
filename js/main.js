@@ -1109,7 +1109,7 @@ window.confirmarPedidoFinal = function(datosStr) {
     // Recargar la página para actualizar el estado
     setTimeout(() => {
         window.location.reload();
-    }, 500);
+    }, 10000);
 };
 
 
@@ -1264,20 +1264,22 @@ document.getElementById('formEnvio')?.addEventListener('submit', async (e) => {
 // ==================== CHECKOUT (CORREGIDO) ====================
 
 const checkoutBtn = document.getElementById('checkoutBtn');
-if (checkoutBtn) {
-    checkoutBtn.onclick = () => {
+    if (checkoutBtn) {
+        checkoutBtn.onclick = () => {
         const pagoContraentrega = document.getElementById('pagoContraentrega');
-        // ✅ CORREGIDO: Usar getCart() en lugar de cart
         const carritoActual = getCart();
+    
         if (pagoContraentrega && pagoContraentrega.checked) {
+            // Contraentrega - NO usar ePayco
             if (carritoActual.length === 0) {
-                mostrarMensaje('🛒 Tu carrito está vacío. Agrega productos para continuar.', 'warning');
+                mostrarMensaje('🛒 Tu carrito está vacío', 'warning');
                 return;
             }
-            abrirModalEnvio();
+            abrirModalEnvio();  // ← Esto debe ejecutarse, NO procesarPagoConEpayco
         } else {
+            // ePayco - pago en línea
             if (carritoActual.length === 0) {
-                mostrarMensaje('🛒 Tu carrito está vacío. Agrega productos para continuar.', 'warning');
+                mostrarMensaje('🛒 Tu carrito está vacío', 'warning');
                 return;
             }
             procesarPagoConEpayco(carritoActual, usedCoupon);
