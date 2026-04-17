@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMA | Seguimiento de pedido</title>
+
+    <!-- FAVICON - Logo en la pestaña -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpg">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpg">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #F9F6F0;
+        }
+        .step-completed {
+            background-color: #7B7369;
+            color: white;
+        }
+        .step-active {
+            background-color: #4d4845;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        .step-pending {
+            background-color: #D7C9B2;
+            color: #7B7369;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .btn-primary { 
+            background-color: #ffffff; 
+            color: #4d4845; 
+            border-radius: 40px;
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid #7B7369;
+        }
+        .btn-primary:hover { 
+            background-color: #7B7369; 
+            color: white;
+            transform: translateY(-2px);
+        }
+        .guia-card {
+            background: linear-gradient(135deg, #4d4845 0%, #4a2e24 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header simple -->
+<header class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+            <!-- Logo y eslogan - Izquierda -->
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="inline-block leading-none">
+                    <img src="https://i.postimg.cc/fTK149zg/L0G0-SIN-F0ND0-02.png" alt="LUMA Logo" class="h-10 md:h-12 w-auto object-contain">
+                </a>
+                <p class="text-[10px] text-[#7b7369] tracking-wide hidden sm:block">Comodidad que se nota</p>
+            </div>
+            
+            <!-- Volver a la tienda - Derecha -->
+            <a href="index.html" class="text-[#7B7369] hover:text-[#4d4845] transition flex items-center gap-2 text-sm md:text-base">
+                <i class="fas fa-arrow-left"></i> 
+                <span>Volver a la tienda</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 py-12 max-w-3xl">
+    <!-- Formulario de búsqueda -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-[#1F1D20] mb-2">📦 Seguimiento de pedido</h1>
+        <p class="text-[#7B7369]">Ingresa tu número de pedido para ver el estado de tu envío</p>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-md p-6 mb-8">
+        <div class="flex gap-3">
+            <input type="text" id="numeroPedido" placeholder="Ej: LUMA-1734567890123" 
+                   class="flex-1 border border-[#F2EBDC] rounded-full px-5 py-3 focus:outline-none focus:border-[#7B7369]">
+            <button onclick="buscarPedido()" class="btn-primary px-6 py-3 rounded-full font-semibold">
+                <i class="fas fa-search mr-2"></i> Buscar
+            </button>
+        </div>
+        <div id="errorMessage" class="text-red-500 text-sm mt-3 hidden text-center"></div>
+    </div>
+    
+    <!-- Resultados -->
+    <div id="resultadoPedido" class="hidden">
+        <!-- Datos del pedido -->
+        <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
+            <div class="flex justify-between items-start flex-wrap gap-4 mb-4">
+                <div>
+                    <h2 class="text-xl font-bold" id="pedidoNumero"></h2>
+                    <p class="text-sm text-gray-500" id="pedidoFecha"></p>
+                </div>
+                <span id="pedidoEstadoBadge" class="px-4 py-2 rounded-full text-sm font-semibold"></span>
+            </div>
+            
+            <!-- Número de guía y transportadora -->
+            <div id="guiaContainer" class="guia-card rounded-xl p-4 mb-4 text-white hidden">
+                <div class="flex justify-between items-center flex-wrap gap-3">
+                    <div>
+                        <p class="text-xs opacity-80">NÚMERO DE GUÍA</p>
+                        <p id="numeroGuia" class="text-lg font-bold tracking-wider"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs opacity-80">TRANSPORTADORA</p>
+                        <p id="transportadoraNombre" class="font-semibold"></p>
+                    </div>
+                    <a id="linkSeguimiento" href="#" target="_blank" class="bg-white text-[#4d4845] px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#7B7369] hover:text-white transition">
+                        <i class="fas fa-external-link-alt mr-1"></i> Rastrear
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-[#F2EBDC] pt-4 mb-4">
+                <h3 class="font-semibold mb-2">📋 Productos:</h3>
+                <div id="pedidoProductos" class="space-y-2"></div>
+                <div class="flex justify-between mt-3 pt-2 border-t border-[#F2EBDC]">
+                    <span class="font-bold">Total pagado:</span>
+                    <span id="pedidoTotal" class="font-bold text-[#7B7369]"></span>
+                </div>
+            </div>
+            
+            <div class="bg-[#F9F6F0] rounded-xl p-4">
+                <h3 class="font-semibold mb-2">📍 Dirección de entrega:</h3>
+                <p id="pedidoDireccion" class="text-sm text-[#7B7369]"></p>
+            </div>
+        </div>
+        
+        <!-- Timeline de estados -->
+        <div class="bg-white rounded-2xl shadow-md p-6">
+            <h3 class="font-semibold mb-6 text-center">🚚 Estado del pedido</h3>
+            <div class="relative">
+                <div id="timeline" class="space-y-6">
+                    <!-- Paso 1 -->
+                    <div class="flex items-start gap-4">
+                        <div class="relative">
+                            <div id="step1Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                                <i class="fas fa-check text-white text-sm hidden"></i>
+                                <span class="text-sm font-bold">1</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold">Pedido confirmado</h4>
+                            <p class="text-sm text-gray-500" id="step1Fecha"></p>
+                        </div>
+                    </div>
+                    <!-- Paso 2 -->
+                    <div class="flex items-start gap-4">
+                        <div class="relative">
+                            <div id="step2Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                                <i class="fas fa-check text-white text-sm hidden"></i>
+                                <span class="text-sm font-bold">2</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold">Preparando pedido</h4>
+                            <p class="text-sm text-gray-500" id="step2Fecha"></p>
+                        </div>
+                    </div>
+                    <!-- Paso 3 -->
+                    <div class="flex items-start gap-4">
+                        <div class="relative">
+                            <div id="step3Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                                <i class="fas fa-check text-white text-sm hidden"></i>
+                                <span class="text-sm font-bold">3</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold">En camino</h4>
+                            <p class="text-sm text-gray-500" id="step3Fecha"></p>
+                        </div>
+                    </div>
+                    <!-- Paso 4 -->
+                    <div class="flex items-start gap-4">
+                        <div class="relative">
+                            <div id="step4Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                                <i class="fas fa-check text-white text-sm hidden"></i>
+                                <span class="text-sm font-bold">4</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold">Entregado</h4>
+                            <p class="text-sm text-gray-500" id="step4Fecha"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-[#F2EBDC] py-10 mt-8 border-t border-[#D7C9B2]">
+    <div class="container mx-auto px-4">
+        <!-- Logo y descripción -->
+        <div class="text-center mb-6">
+            <a href="index.html" class="inline-block leading-none">
+                <img src="https://i.postimg.cc/fbBbJLfX/IS0TIP0-SIN-F0ND0-08.png" alt="LUMA Logo" class="h-8 md:h-10 w-auto object-contain mx-auto">
+            </a>
+            <p class="text-[10px] text-[#7B7369] tracking-wide mt-2">Comodidad que se nota</p>
+        </div>
+        
+        <!-- Redes Sociales -->
+        <div class="text-center mb-6">
+            <p class="text-[#7B7369] text-sm mb-3">Síguenos en nuestras redes sociales</p>
+            <div class="flex justify-center gap-6">
+                <!-- Instagram -->
+                <a href="https://www.instagram.com/lumatextil.col/?hl=es" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-instagram text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">Instagram</span>
+                </a>
+                
+                <!-- Facebook -->
+                <a href="https://www.facebook.com/Lumatextilcol" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-facebook-f text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">Facebook</span>
+                </a>
+                
+                <!-- TikTok -->
+                <a href="https://www.tiktok.com/@lumatextilcol" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-tiktok text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">TikTok</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Copyright -->
+        <div class="text-center">
+            <p class="text-[#7B7369] text-xs">&copy; 2026 LUMA Colombia. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    function buscarPedido() {
+        const numeroPedido = document.getElementById('numeroPedido').value.trim();
+        const errorDiv = document.getElementById('errorMessage');
+        
+        if (!numeroPedido) {
+            errorDiv.innerHTML = 'Por favor ingresa un número de pedido';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        errorDiv.classList.add('hidden');
+        
+        const compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
+        const pedido = compras.find(c => c.id.toString() === numeroPedido || 'LUMA-' + c.id === numeroPedido);
+        
+        if (!pedido) {
+            errorDiv.innerHTML = 'No encontramos un pedido con ese número. Verifica e intenta de nuevo.';
+            errorDiv.classList.remove('hidden');
+            document.getElementById('resultadoPedido').classList.add('hidden');
+            return;
+        }
+        
+        mostrarPedido(pedido);
+    }
+    
+    function mostrarPedido(pedido) {
+        document.getElementById('resultadoPedido').classList.remove('hidden');
+        
+        // Datos básicos
+        document.getElementById('pedidoNumero').innerText = 'LUMA-' + pedido.id;
+        document.getElementById('pedidoFecha').innerText = new Date(pedido.fecha).toLocaleDateString();
+        document.getElementById('pedidoTotal').innerText = '$' + pedido.total.toLocaleString();
+        
+        // Estado del pedido
+        const estado = pedido.estadoEnvio || 'confirmado';
+        let estadoTexto = '';
+        let estadoColor = '';
+        
+        switch(estado) {
+            case 'confirmado':
+                estadoTexto = '✅ Pedido confirmado';
+                estadoColor = 'bg-blue-100 text-blue-700';
+                break;
+            case 'preparando':
+                estadoTexto = '📦 En preparación';
+                estadoColor = 'bg-yellow-100 text-yellow-700';
+                break;
+            case 'enviado':
+                estadoTexto = '🚚 En camino';
+                estadoColor = 'bg-purple-100 text-purple-700';
+                break;
+            case 'entregado':
+                estadoTexto = '🏠 Entregado';
+                estadoColor = 'bg-green-100 text-green-700';
+                break;
+            default:
+                estadoTexto = '✅ Pedido confirmado';
+                estadoColor = 'bg-blue-100 text-blue-700';
+        }
+        
+        const badge = document.getElementById('pedidoEstadoBadge');
+        badge.innerText = estadoTexto;
+        badge.className = `px-4 py-2 rounded-full text-sm font-semibold ${estadoColor}`;
+        
+        // Mostrar guía y transportadora si existen
+        const guiaContainer = document.getElementById('guiaContainer');
+        const numeroGuia = pedido.numeroGuia || '';
+        const transportadora = pedido.transportadora || '';
+        
+        if (numeroGuia && transportadora) {
+            guiaContainer.classList.remove('hidden');
+            document.getElementById('numeroGuia').innerText = numeroGuia;
+            document.getElementById('transportadoraNombre').innerText = transportadora;
+            
+            // Crear link de rastreo según transportadora
+            let linkRastreo = '#';
+            if (transportadora === 'Interrapidísimo') {
+                linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+            } else if (transportadora === 'Servientrega') {
+                linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+            } else if (transportadora === 'Envios Nacionales') {
+                linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+            } else if (transportadora === 'Coordina2') {
+                linkRastreo = `https://coordina2.com/tracking?guia=${numeroGuia}`;
+            }
+            document.getElementById('linkSeguimiento').href = linkRastreo;
+        } else {
+            guiaContainer.classList.add('hidden');
+        }
+
+
+        // Productos (CORREGIDO para packs)
+            const productosDiv = document.getElementById('pedidoProductos');
+            productosDiv.innerHTML = pedido.productos.map(p => {
+            // Si es un pack, mostrar los productos incluidos
+                if (p.esPack && p.productosIncluidosDetalle) {
+                return `
+                    <div class="bg-[#F2EBDC] rounded-lg p-3 mb-2">
+                        <p class="font-semibold text-sm mb-2">📦 ${p.nombre || p.NOMBRE}</p>
+                        <div class="pl-4 space-y-1">
+                            ${p.productosIncluidosDetalle.map(detalle => `
+                                <div class="text-xs text-[#7B7369]">
+                                • ${detalle.nombre} - ${detalle.colorNombre} (Talla ${detalle.talla}) x${detalle.cantidad}
+                                    </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+    
+            // Producto normal (funciona con mayúsculas o minúsculas)
+                const nombre = p.nombre || p.NOMBRE || 'Producto';
+                const color = p.colorNombre || p.COLORNOMBRE || '';
+                const talla = p.talla || '';
+                const cantidad = p.cantidad || 1;
+                const precio = p.precio || p.PRECIO || 0;
+    
+                return `
+                    <div class="flex justify-between text-sm">
+                        <span>${nombre} ${color ? `${color}` : ''} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
+                        <span>$${(precio * cantidad).toLocaleString()}</span>
+                    </div>
+                `;
+        }).join('');
+        
+        // Dirección
+        let direccionTexto = 'Pago en línea - Envío estándar';
+        if (pedido.direccion) {
+            direccionTexto = `${pedido.direccion}, ${pedido.ciudad || ''}`;
+        }
+        document.getElementById('pedidoDireccion').innerText = direccionTexto;
+        
+        actualizarTimeline(estado, pedido.fecha);
+    }
+    
+    function actualizarTimeline(estado, fechaPedido) {
+        const pasos = ['confirmado', 'preparando', 'enviado', 'entregado'];
+        const indiceActual = pasos.indexOf(estado);
+        
+        for (let i = 0; i < 4; i++) {
+            const stepIcon = document.getElementById(`step${i+1}Icon`);
+            const stepFecha = document.getElementById(`step${i+1}Fecha`);
+            
+            stepIcon.classList.remove('step-completed', 'step-active', 'step-pending');
+            stepIcon.innerHTML = `<span class="text-sm font-bold">${i+1}</span>`;
+            
+            if (i < indiceActual) {
+                stepIcon.classList.add('step-completed');
+                stepIcon.innerHTML = '<i class="fas fa-check text-white text-sm"></i>';
+                stepFecha.innerText = i === 0 && fechaPedido ? new Date(fechaPedido).toLocaleDateString() : 'Completado';
+            } else if (i === indiceActual) {
+                stepIcon.classList.add('step-active');
+                stepFecha.innerText = i === 0 && fechaPedido ? new Date(fechaPedido).toLocaleDateString() : 'En proceso';
+            } else {
+                stepIcon.classList.add('step-pending');
+                stepFecha.innerText = 'Pendiente';
+            }
+        }
+    }
+    
+    // Buscar automáticamente si hay número en URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const pedidoUrl = urlParams.get('pedido');
+    if (pedidoUrl) {
+        document.getElementById('numeroPedido').value = pedidoUrl;
+        buscarPedido();
+    }
+</script>
+<!-- Botón flotante de WhatsApp con número de pedido dinámico -->
+<script>
+    function enviarWhatsAppAyuda() {
+        // Obtener el número de pedido del input o del resultado
+        const inputPedido = document.getElementById('numeroPedido');
+        let numeroPedido = '';
+        if (inputPedido) {
+            numeroPedido = inputPedido.value.trim();
+        }
+        
+        // Si no hay número en el input, buscar en el resultado mostrado
+        if (!numeroPedido) {
+            const pedidoNumero = document.getElementById('pedidoNumero');
+            if (pedidoNumero) {
+                numeroPedido = pedidoNumero.innerText;
+            }
+        }
+        
+        const mensaje = `Hola LUMA, necesito ayuda con mi pedido (${numeroPedido || 'sin número'})`;
+        const url = `https://wa.me/573233877904?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+    }
+</script>
+
+<a href="#" 
+   onclick="enviarWhatsAppAyuda(); return false;"
+   style="position: fixed; bottom: 20px; right: 20px; background-color: #25D366; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 9999; transition: all 0.3s ease; text-decoration: none;">
+    <i class="fab fa-whatsapp"></i>
+</a>
+</body>
+</html>

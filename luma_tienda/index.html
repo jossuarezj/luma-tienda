@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>LUMA</title>
+
+    <!-- FAVICON - Logo en la pestaña -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpgg">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/Y2JRjpm6/Logo-Opcion-Luma.jpg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- ePayco SDK -->
+    <script src="https://checkout.epayco.co/checkout.js"></script>
+    
+    <style>
+        @font-face {
+        font-family: 'Gotham Bold';
+        src: url('fonts/Gotham%20Bold/Gotham%20Bold.otf') format('opentype');
+        font-weight: bold;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: 'Eight One';
+            src: url('fonts/Eight%20One/Eight%20One.ttf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, p, a, span, li, button, input, select, textarea, .texto, .product-card p, .benefit-card p { 
+            font-family: 'Gotham Bold', 'Montserrat', sans-serif; 
+        }
+
+        body { background: #F9F6F0; color: #4d4845; }
+
+        /* Los títulos mantienen su fuente original */
+        h1, h2, h3, h4 .titulo-filosofia { 
+            font-family: 'Eight One', 'Playfair Display', serif; 
+        }
+        
+        .btn-primary { 
+            background-color: #ffffff; 
+            color: #020000; 
+            border-radius: 40px;
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .btn-primary:hover { 
+            background-color: #F5ECDC; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+        }
+        .btn-secondary { 
+            background-color: transparent; 
+            color: #7B7369; 
+            border: 1.5px solid #7B7369;
+            border-radius: 40px;
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            font-weight: 500;
+        }
+        .btn-secondary:hover { 
+            background-color: #7B7369; 
+            color: white; 
+            transform: translateY(-2px);
+        }
+        
+        .product-card { 
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1); 
+            background: white; 
+            border-radius: 24px; 
+            overflow: hidden; 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid #7B7369;
+        }
+        .product-card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: 0 20px 30px -12px rgba(92,58,46,0.15);
+            border-color: #7B7369;
+        }
+        
+        .model-badge { 
+            position: absolute; 
+            top: 12px; 
+            left: 12px; 
+            background: #ffffff; 
+            color: rgb(0, 0, 0); 
+            padding: 4px 14px; 
+            border-radius: 30px; 
+            font-size: 10px; 
+            font-weight: 600; 
+            letter-spacing: 0.5px;
+            z-index: 10; 
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp 0.6s ease-out; }
+        
+        @keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        .bounce-animation { animation: bounce 0.4s ease; }
+        .modal-overlay { background: rgba(92,58,46,0.4); backdrop-filter: blur(4px); }
+        
+        .benefit-card { 
+            transition: all 0.3s ease; 
+            background: white; 
+            border-radius: 20px; 
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #F2EBDC;
+        }
+        .benefit-card:hover { 
+            transform: translateY(-4px); 
+            border-color: #7B7369;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F2EBDC; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: oklab(#1F1D20); border-radius: 10px; }
+        
+        .user-dropdown { position: relative; }
+        .dropdown-menu { position: absolute; top: 45px; right: 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-width: 160px; z-index: 100; overflow: hidden; border: 1px solid #F2EBDC; }
+        .dropdown-menu a { display: block; padding: 10px 16px; color: #4d4845; text-decoration: none; transition: background 0.2s; font-size: 13px; }
+        .dropdown-menu a:hover { background: #F9F6F0; }
+        .dropdown-menu .logout { color: #7B7369; border-top: 1px solid #F2EBDC; }
+        
+        .notification { background-color: #7B7369 !important; color: white !important; border-radius: 40px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .notification i { color: white; }
+        button, [onclick] { cursor: pointer; }
+        
+        .btn-google {
+            background-color: white;
+            color: #757575;
+            border: 1px solid #D7C9B2;
+            border-radius: 40px;
+            transition: all 0.3s ease;
+        }
+        .btn-google:hover {
+            background-color: #F9F6F0;
+        }
+        .btn-facebook {
+            background-color: #1877F2;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            transition: all 0.3s ease;
+        }
+        .btn-facebook:hover {
+            background-color: #1666d6;
+        }
+        
+        .section-title {
+            position: relative;
+            display: inline-block;
+        }
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: #7B7369;
+            border-radius: 10px;
+        }
+        
+        .filter-btn {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .filter-btn-active {
+            background-color: #7B7369;
+            color: white;
+            border-color: #7B7369;
+        }
+        .filter-btn-inactive {
+            background-color: transparent;
+            color: #7B7369;
+            border-color: #7b7369;
+        }
+        .filter-btn-inactive:hover {
+            background-color: #7b7369;
+            color: white;
+        }
+        /* Mejoras para móvil en el modal de producto */
+        @media (max-width: 768px) {
+        #productModal .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+        }
+    
+        .talla-modal-btn {
+        min-width: 55px;
+        }
+    
+        #productModalContent .flex.gap-2 {
+        scrollbar-width: thin;
+        }
+        }
+        /* Corrección para las imágenes de productos */
+        .product-card .relative.h-80 {
+        height: 320px;
+        overflow: hidden;
+        background-color: #F9F6F0;
+        }
+
+        .product-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        /* Cambia de 'cover' a 'contain' para que se vea la imagen completa */
+        object-position: center;
+        transition: transform 0.5s ease;
+        }
+
+        /* Para móvil, reducir la altura */
+        @media (max-width: 640px) {
+        .product-card .relative.h-80 {
+        height: 250px;
+        }
+        }
+
+        /* Para tablet */
+        @media (min-width: 641px) and (max-width: 1024px) {
+        .product-card .relative.h-80 {
+        height: 280px;
+        }
+    }
+    /* Ajuste para vista previa de imágenes en packs */
+        #previewImagen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            }
+
+        #previewImg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Banner superior de promoción -->
+<div class="bg-[#1F1D20] text-[#F5ECDC] text-center py-2 text-sm font-medium">
+    <div class="container mx-auto px-4">
+        <span>¡ENVIOS GRATIS POR COMPRAS SUPERIORES A $99.990!</span>
+    </div>
+</div>
+
+<!-- Header -->
+<header class="fixed top-10 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-sm z-40">
+    <div class="container mx-auto px-4 py-2 flex justify-between items-center flex-wrap gap-4">
+        <!-- Logo + eslogan horizontal -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+            <a href="index.html" class="inline-block leading-none">
+                <img src="https://i.postimg.cc/fTK149zg/L0G0-SIN-F0ND0-02.png" alt="LUMA Logo" class="h-10 md:h-12 w-auto object-contain">
+            </a>
+            <p class="text-[10px] text-[#7b7369] tracking-wide hidden sm:block">Comodidad que se nota</p>
+        </div>
+        
+        <!-- Menú desktop (visible en tablet y PC) -->
+        <div class="hidden md:flex space-x-8">
+            <a href="#" onclick="showTab('inicio'); return false;" class="hover:text-[#7B7369] transition-colors font-medium">Inicio</a>
+            <a href="#" onclick="showTab('productos'); return false;" class="hover:text-[#7B7369] transition-colors font-medium">Productos</a>
+            <a href="#" onclick="showTab('promociones'); return false;" class="hover:text-[#7B7369] transition-colors font-medium">Promociones</a>
+            <a href="#" onclick="showTab('Emprende'); return false;" class="hover:text-[#7B7369] transition-colors font-medium">Emprende</a>
+        </div>
+        
+        <!-- Botón menú hamburguesa (visible solo en móvil) -->
+        <button id="menuBtn" class="md:hidden text-2xl text-[#4d4845] hover:text-[#7B7369] transition">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="flex items-center space-x-4">
+            <div class="user-dropdown relative">
+                <div class="flex items-center space-x-2 cursor-pointer group" id="userMenuBtn">
+                    <div class="w-8 h-8 rounded-full bg-[#F2EBDC] flex items-center justify-center group-hover:bg-[#7B7369] transition-colors">
+                        <i class="fas fa-user text-[#4d4845] group-hover:text-white text-sm"></i>
+                    </div>
+                    <span id="userName" class="text-sm font-medium">Cargando...</span>
+                    <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                </div>
+                <div id="userDropdown" class="dropdown-menu hidden">
+                    <a href="#" onclick="showTab('misCompras'); return false;"><i class="fas fa-history mr-2"></i> Mis compras</a>
+                    <a href="#" onclick="cerrarSesion(); return false;" class="logout"><i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión</a>
+                </div>
+            </div>
+            <button id="cartBtn" class="relative group">
+                <div class="w-10 h-10 rounded-full bg-[#F2EBDC] flex items-center justify-center group-hover:bg-[#7B7369] transition-colors">
+                    <i class="fas fa-shopping-bag text-[#4d4845] group-hover:text-white"></i>
+                </div>
+                <span id="cartCount" class="absolute -top-1 -right-1 bg-[#7B7369] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Menú móvil desplegable (oculto por defecto) -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-[#F2EBDC] py-4 px-4 flex flex-col space-y-3">
+        <a href="#" onclick="showTab('inicio'); return false; cerrarMenuMobile();" class="hover:text-[#7B7369] transition-colors font-medium py-2">Inicio</a>
+        <a href="#" onclick="showTab('productos'); return false; cerrarMenuMobile();" class="hover:text-[#7B7369] transition-colors font-medium py-2">Productos</a>
+        <a href="#" onclick="showTab('promociones'); return false; cerrarMenuMobile();" class="hover:text-[#7B7369] transition-colors font-medium py-2">Promociones</a>
+        <a href="#" onclick="showTab('Emprende'); return false; cerrarMenuMobile();" class="hover:text-[#7B7369] transition-colors font-medium py-2">Emprende</a>
+    </div>
+</header>
+        
+<main class="pt-32">
+    
+    <!-- INICIO - Hero con imagen de fondo y productos destacados -->
+    <div id="tabInicio" class="tab-content">
+        <!-- Hero con imagen de fondo -->
+        <section class="relative min-h-[80vh] overflow-hidden">
+            <div class="absolute inset-0 z-0">
+                <picture>
+                    <!-- Imagen para móvil (ancho de pantalla < 768px) -->
+                    <source media="(max-width: 768px)" srcset="https://i.postimg.cc/Pf0yJbyF/20260411-1902-Image-Generation-remix-01knzfxzr4e4891e55ec6cxsgy.png">
+                    <!-- Imagen para PC (ancho de pantalla >= 768px) -->
+                     <source media="(min-width: 768px)" srcset="https://i.postimg.cc/R0j5XJ98/Prueba.png"> 
+                     <!-- Imagen por defecto (fallback) -->
+                    <img src="https://i.postimg.cc/Pf0yJbyF/20260411-1902-Image-Generation-remix-01knzfxzr4e4891e55ec6cxsgy.png" alt="LUMA Colección" class="w-full h-full object-cover object-center">
+                </picture>
+                <div class="absolute inset-0 bg-black/20"></div>
+            </div>
+            <div class="relative z-10 h-full min-h-[80vh] flex items-end justify-start">
+                <div class="px-8 md:px-16 lg:px-24 pb-12 md:pb-16">
+                    <button onclick="showTab('productos')" class="btn-primary px-8 py-3 text-sm font-semibold bg-[rgba(255,255,255,0.6)] text-[#4d4845] hover:bg-[#F2EBDC] shadow-lg">Colección <i class="fas fa-arrow-right ml-2"></i></button>
+                </div>
+            </div>
+        </section>
+
+                <!-- Productos Destacados -->
+        <section class="py-16">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-10">
+                    <h2 class="section-title text-[#4D4845] text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Productos Destacados</h2>
+                </div>
+                <div class="carrusel-container relative">
+                    <button class="carrusel-btn prev" id="carruselPrev">❮</button>
+                    <div id="productosDestacados" class="carrusel-track"></div>
+                    <button class="carrusel-btn next" id="carruselNext">❯</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Beneficios -->
+<section class="py-12 bg-[#F2EBDC]">
+    <div class="container mx-auto px-4">
+        <!-- Grid: En móvil 2 columnas, en tablet/PC 4 columnas -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 text-center">
+            <div class="benefit-card">
+                <i class="fas fa-truck text-xl md:text-2xl text-[#7B7369] mb-2 md:mb-3"></i>
+                <h3 class="font-semibold text-xs md:text-sm">Envío a toda Colombia</h3>
+                <p class="text-[10px] md:text-xs text-[#7B7369] mt-1">Entregas seguras</p>
+            </div>
+            <div class="benefit-card">
+                <i class="fas fa-undo-alt text-xl md:text-2xl text-[#7B7369] mb-2 md:mb-3"></i>
+                <h3 class="font-semibold text-xs md:text-sm">30 días de garantía</h3>
+                <p class="text-[10px] md:text-xs text-[#7B7369] mt-1">Cambios sin costo</p>
+            </div>
+            <div class="benefit-card">
+                <i class="fas fa-lock text-xl md:text-2xl text-[#7B7369] mb-2 md:mb-3"></i>
+                <h3 class="font-semibold text-xs md:text-sm">Pago seguro</h3>
+                <p class="text-[10px] md:text-xs text-[#7B7369] mt-1">Transacciones protegidas</p>
+            </div>
+            <div class="benefit-card">
+                <i class="fas fa-headset text-xl md:text-2xl text-[#7B7369] mb-2 md:mb-3"></i>
+                <h3 class="font-semibold text-xs md:text-sm">Atención al cliente</h3>
+                <p class="text-[10px] md:text-xs text-[#7B7369] mt-1">L - S 8:00 AM - 8:00 PM</p>
+                <p class="text-[10px] md:text-xs text-[#7B7369] mt-0.5">D - F 8:00 AM - 5:00 PM</p>
+            </div>
+        </div>
+    </div>
+</section>
+    </div>  <!-- ← CIERRA tabInicio -->
+
+    <!-- PRODUCTOS -->
+    <div id="tabProductos" class="tab-content hidden">
+        <div class="container mx-auto px-4 py-12">
+            <h2 class="text-3xl font-bold text-center mb-8">Todos los Productos</h2>
+            <div id="colorFilters" class="flex flex-wrap justify-center gap-3 mb-8"></div>
+            <div id="productsGrid" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"></div>
+        </div>
+    </div>
+
+    <!-- PROMOCIONES -->
+<div id="tabPromociones" class="tab-content hidden">
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <div class="text-center mb-6 md:mb-10">
+            <h2 class="text-2xl md:text-4xl font-bold mb-2 md:mb-3">Ofertas Especiales</h2>
+            <p class="text-xs md:text-sm text-[#7B7369]">Aprovecha nuestros packs con descuento</p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
+            <!-- Pack 3 Bodys -->
+            <div class="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 text-center shadow-md hover:shadow-xl transition cursor-pointer border border-[#F2EBDC]" onclick="abrirSelectorPack(3)">
+                <div class="inline-block bg-[#7B7369] text-white px-3 md:px-4 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold mb-2 md:mb-4">🔥 -63%</div>
+                <div class="text-3xl md:text-5xl mb-2 md:mb-3">📦📦📦</div>
+                <h3 class="text-lg md:text-2xl font-bold mb-1 md:mb-2">Pack 3 Bodys</h3>
+                <p class="text-xs md:text-sm line-through text-[#7b7369]">$269.700</p>
+                <p class="text-2xl md:text-4xl font-bold my-1 md:my-2 text-[#4d4845]">$99.990</p>
+                <p class="text-[10px] md:text-sm text-green-600 mb-3 md:mb-4">💰 Ahorras $169.710</p>
+                <button class="btn-primary px-4 md:px-6 py-1 md:py-2 text-xs md:text-sm" onclick="event.stopPropagation(); abrirSelectorPack(3)">Elegir productos →</button>
+            </div>
+            
+            <!-- Pack 4 Bodys -->
+            <div class="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 text-center shadow-md hover:shadow-xl transition cursor-pointer border border-[#F2EBDC]" onclick="abrirSelectorPack(4)">
+                <div class="inline-block bg-[#7B7369] text-white px-3 md:px-4 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold mb-2 md:mb-4">🔥 -67%</div>
+                <div class="text-3xl md:text-5xl mb-2 md:mb-3">📦📦📦📦</div>
+                <h3 class="text-lg md:text-2xl font-bold mb-1 md:mb-2">Pack 4 Bodys</h3>
+                <p class="text-xs md:text-sm line-through text-[#7b7369]">$359.600</p>
+                <p class="text-2xl md:text-4xl font-bold my-1 md:my-2 text-[#4d4845]">$119.990</p>
+                <p class="text-[10px] md:text-sm text-green-600 mb-3 md:mb-4">💰 Ahorras $239.610</p>
+                <button class="btn-primary px-4 md:px-6 py-1 md:py-2 text-xs md:text-sm" onclick="event.stopPropagation(); abrirSelectorPack(4)">Elegir productos →</button>
+            </div>
+        </div>
+        
+        <div class="text-center mt-6 md:mt-10">
+            <button onclick="showRegisterModal()" class="text-xs md:text-sm text-[#7B7369] font-semibold underline">Crear cuenta gratis</button>
+        </div>
+    </div>
+</div>
+
+    <!-- MIS COMPRAS -->
+    <div id="tabMisCompras" class="tab-content hidden">
+        <div class="container mx-auto px-4 py-12">
+            <h2 class="text-3xl font-bold text-center mb-8">📦 Mis Compras</h2>
+            <div id="historialCompras" class="max-w-3xl mx-auto space-y-4"></div>
+        </div>
+    </div>
+
+<!-- EMPRENDE CON LUMA -->
+<div id="tabEmprende" class="tab-content hidden">
+    <!-- Hero -->
+    <div class="bg-[#4D4845] py-8 md:py-12">
+        <div class="container mx-auto px-4 text-center">
+            <img src="https://i.postimg.cc/fbBbJLfX/IS0TIP0-SIN-F0ND0-08.png" alt="LUMA" class="w-20 md:w-32 mx-auto mb-4 opacity-30">
+            <h1 class="text-2xl md:text-5xl font-bold text-white">Emprende con LUMA</h1>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Nuestra filosofía -->
+        <div class="text-center mb-12">
+            <h2 class="text-xl sm:text-2xl md:text-4xl font-bold text-[#4D4845] mb-4" style="font-family: 'Gotham Bold', 'Montserrat', sans-serif;">Comodidad que se nota</h2>
+            <div class="w-12 h-0.5 bg-[#7B7369] mx-auto mb-6 rounded-full"></div>
+            <p class="text-[#7B7369] text-base leading-relaxed">
+                En LUMA creemos que la ropa interior y básicos deben ser <strong class="text-[#4D4845]">funcionales, duraderos y con estilo</strong>. 
+                Por eso creamos prendas que se adaptan a ti, no al revés. Calidad que se siente, comodidad que se nota.
+            </p>
+        </div>
+
+        <!-- Valores -->
+        <div class="grid md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white rounded-2xl p-6 text-center shadow-md border border-[#F2EBDC]">
+                <div class="w-16 h-16 bg-[#F5ECDC] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-medal text-2xl text-[#7B7369]"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">Calidad</h3>
+                <p class="text-sm text-[#7B7369]">Materiales premium que duran y se sienten bien.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 text-center shadow-md border border-[#F2EBDC]">
+                <div class="w-16 h-16 bg-[#F5ECDC] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-hand-holding-heart text-2xl text-[#7B7369]"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">Confianza</h3>
+                <p class="text-sm text-[#7B7369]">30 días de garantía y atención personalizada.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 text-center shadow-md border border-[#F2EBDC]">
+                <div class="w-16 h-16 bg-[#F5ECDC] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-chart-line text-2xl text-[#7B7369]"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">Crecimiento</h3>
+                <p class="text-sm text-[#7B7369]">Creemos en el talento local y en crecer juntos.</p>
+            </div>
+        </div>
+
+        <!-- Oportunidad de negocio -->
+        <div class="bg-[#F2EBDC] rounded-3xl p-8 mb-12">
+            <div class="text-center mb-6">
+                <div class="inline-block bg-[#7B7369] text-white px-4 py-1 rounded-full text-sm font-semibold mb-4">🚀 Oportunidad</div>
+                <h2 class="text-3xl font-bold text-[#4D4845] mb-3">¿Quieres ser parte de LUMA?</h2>
+                <p class="text-[#7B7369] leading-relaxed">
+                    Dos formas de crecer con nosotros, elige la que mejor se adapte a ti.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Distribuidor -->
+                <div class="bg-white rounded-2xl p-6 text-center shadow-md">
+                    <div class="w-16 h-16 bg-[#F5ECDC] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-store text-2xl text-[#7B7369]"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-2">Distribuidor</h3>
+                    <p class="text-sm text-[#7B7369] mb-4">
+                        Compra al por mayor y revende. Ideal si tienes tienda o quieres empezar tu propio negocio.
+                    </p>
+                    <ul class="text-left text-sm text-[#7B7369] space-y-2 mb-4">
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Precios especiales por mayoreo</li>
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Ganas por diferencia de precio</li>
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Control total sobre tu negocio</li>
+                    </ul>
+                    <a href="https://wa.me/573233877904?text=Hola%20LUMA%2C%20quiero%20ser%20distribuidor" 
+                       target="_blank" 
+                       class="btn-secondary w-full py-2 text-sm font-semibold inline-flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp"></i> Quiero ser distribuidor
+                    </a>
+                </div>
+                
+                <!-- Afiliado -->
+                <div class="bg-white rounded-2xl p-6 text-center shadow-md">
+                    <div class="w-16 h-16 bg-[#F5ECDC] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-share-alt text-2xl text-[#7B7369]"></i>
+                    </div>
+                    <h3 class="font-bold text-xl mb-2">Afiliado</h3>
+                    <p class="text-sm text-[#7B7369] mb-4">
+                        Promociona y gana comisión por cada venta. Sin invertir, sin inventario.
+                    </p>
+                    <ul class="text-left text-sm text-[#7B7369] space-y-2 mb-4">
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Cero inversión</li>
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Ganas comisión por venta</li>
+                        <li><i class="fas fa-check-circle text-green-600 mr-2"></i> Solo promociona, nosotros enviamos</li>
+                    </ul>
+                    <a href="https://wa.me/573233877904?text=Hola%20LUMA%2C%20quiero%20ser%20afiliado" 
+                       target="_blank" 
+                       class="btn-secondary w-full py-2 text-sm font-semibold inline-flex items-center justify-center gap-2">
+                        <i class="fab fa-whatsapp"></i> Quiero ser afiliado
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto rápido -->
+        <div class="bg-white rounded-2xl p-6 text-center shadow-md border border-[#F2EBDC]">
+            <h3 class="font-bold text-xl mb-3">📞 ¿Tienes preguntas?</h3>
+            <p class="text-[#7B7369] text-sm mb-4">Estamos aquí para ayudarte a crecer con LUMA.</p>
+            <div class="flex justify-center gap-4">
+                <a href="https://wa.me/573233877904?text=Hola%20LUMA%2C%20tengo%20preguntas%20sobre%20c%C3%B3mo%20ser%20distribuidor%20o%20afiliado" 
+                   class="text-[#7B7369] hover:text-[#D4A574] transition" 
+                   target="_blank">
+                    <i class="fab fa-whatsapp text-2xl"></i>
+                </a>
+                <a href="mailto:info@lumacolombia.com" class="text-[#7B7369] hover:text-[#D4A574] transition">
+                    <i class="fas fa-envelope text-2xl"></i>
+                </a>
+                <a href="https://www.instagram.com/lumatextil.col/" class="text-[#7B7369] hover:text-[#D4A574] transition" target="_blank">
+                    <i class="fab fa-instagram text-2xl"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-[#F2EBDC] py-10 mt-8 border-t border-[#D7C9B2]">
+    <div class="container mx-auto px-4">
+        <!-- Logo y descripción -->
+        <div class="text-center mb-6">
+            <a href="index.html" class="inline-block leading-none">
+                <img src="https://i.postimg.cc/fbBbJLfX/IS0TIP0-SIN-F0ND0-08.png" alt="LUMA Logo" class="h-8 md:h-10 w-auto object-contain mx-auto">
+            </a>
+            <p class="text-[10px] text-[#7B7369] tracking-wide mt-2">Comodidad que se nota</p>
+        </div>
+        
+        <!-- Redes Sociales -->
+        <div class="text-center mb-6">
+            <p class="text-[#7B7369] text-sm mb-3">Síguenos en nuestras redes sociales</p>
+            <div class="flex justify-center gap-6">
+                <!-- Instagram -->
+                <a href="https://www.instagram.com/lumatextil.col/?hl=es" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-instagram text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">Instagram</span>
+                </a>
+                
+                <!-- Facebook -->
+                <a href="https://www.facebook.com/Lumatextilcol" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-facebook-f text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">Facebook</span>
+                </a>
+                
+                <!-- TikTok -->
+                <a href="https://www.tiktok.com/@lumatextilcol" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="red-social group flex flex-col items-center transition-all duration-300 hover:-translate-y-1 active:-translate-y-1 focus:-translate-y-1">
+                    <div class="icon-circle w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-md flex items-center justify-center transition-all duration-300 group-hover:bg-[#7B7369] group-active:bg-[#7B7369] group-focus:bg-[#7B7369]">
+                        <i class="fab fa-tiktok text-[#7B7369] text-lg md:text-xl transition-colors duration-300 group-hover:text-white group-active:text-white group-focus:text-white"></i>
+                    </div>
+                    <span class="text-[10px] text-[#7B7369] mt-1 transition-colors duration-300 group-hover:text-[#7B7369] group-active:text-[#7B7369] group-focus:text-[#7B7369]">TikTok</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Enlaces adicionales -->
+        <div class="flex justify-center gap-4 text-xs text-[#7B7369] mb-4">
+            <a href="seguimiento.html" class="hover:text-[#7B7369] active:text-[#7B7369] focus:text-[#7B7369] transition-colors">Seguimiento de pedidos</a>
+            <span>|</span>
+            <a href="admin.html" class="hover:text-[#7B7369] active:text-[#7B7369] focus:text-[#7B7369] transition-colors">Panel Admin</a>
+        </div>
+        
+        <!-- Copyright -->
+        <div class="text-center">
+            <p class="text-[#7B7369] text-xs">&copy; 2026 LUMA Colombia. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</footer>
+<style>
+    
+    /* Estilos adicionales para móvil y focus */
+    .red-social {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .red-social:focus {
+        outline: none;
+    }
+    
+    .red-social:focus .icon-circle {
+        background-color: #7B7369 !important;
+        transform: scale(1.05);
+    }
+    
+    .red-social:focus i {
+        color: white !important;
+    }
+    
+    .red-social:focus span {
+        color: #7B7369 !important;
+    }
+    
+    /* Efectos para dispositivos táctiles (móvil) */
+    @media (max-width: 768px) {
+        .red-social:active .icon-circle {
+            background-color: #7B7369 !important;
+            transform: scale(0.95);
+            transition: all 0.1s ease;
+        }
+        
+        .red-social:active i {
+            color: white !important;
+        }
+        
+        .red-social:active span {
+            color: #7B7369 !important;
+        }
+        
+        .red-social:hover .icon-circle {
+            background-color: #7B7369 !important;
+        }
+        
+        .red-social:hover i {
+            color: white !important;
+        }
+        
+        .red-social:hover span {
+            color: #7B7369 !important;
+        }
+    }
+    
+    /* Efectos para PC (mouse) */
+    @media (min-width: 769px) {
+        .red-social:hover .icon-circle {
+            background-color: #7B7369 !important;
+            transform: scale(1.05);
+        }
+        
+        .red-social:hover i {
+            color: white !important;
+        }
+        
+        .red-social:hover span {
+            color: #7B7369 !important;
+        }
+    }
+
+    /* Carrusel para productos destacados en móvil */
+.carrusel-container {
+    position: relative;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+.carrusel-track {
+    display: flex;
+    transition: transform 0.3s ease;
+}
+
+.carrusel-slide {
+    flex: 0 0 50%;
+    padding: 0 8px;
+}
+
+.carrusel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #7B7369;
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.carrusel-btn.prev {
+    left: -10px;
+}
+
+.carrusel-btn.next {
+    right: -10px;
+}
+
+.carrusel-btn:hover {
+    background: #4D4845;
+}
+
+/* En PC, ocultar flechas y mostrar grid normal */
+@media (min-width: 768px) {
+    .carrusel-btn {
+        display: none;
+    }
+    .carrusel-track {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+    }
+    .carrusel-slide {
+        flex: none;
+        padding: 0;
+    }
+}
+</style>
+
+<!-- Carrito Sidebar -->
+<div id="cartSidebar" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300">
+    <div class="flex flex-col h-full">
+        <div class="flex justify-between items-center p-5 border-b">
+            <h3 class="text-xl font-semibold">Mi Carrito</h3>
+            <button id="closeCart" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="cartItems" class="flex-1 overflow-auto p-5"></div>
+        <div class="border-t p-6 bg-gray-50">
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <input type="text" id="codigoCuponCarrito" placeholder="Código de descuento" class="flex-1 border border-[#F2EBDC] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                    <button id="aplicarCuponCarrito" class="btn-primary px-4 py-2 text-sm rounded-full">Aplicar</button>
+                </div>
+                <div id="cuponMensajeCarrito" class="text-xs mt-2 hidden"></div>
+            </div>
+
+            <!-- Mensaje de envío gratis -->
+            <div id="mensajeEnvioGratis" class="bg-green-50 border border-green-200 rounded-xl p-3 mb-4 hidden">
+                <p class="text-green-700 text-xs flex items-center gap-2">
+                    <i class="fas fa-truck"></i> ¡Envío gratis! Tu pedido supera los $99.990
+                </p>
+            </div>
+            <div id="mensajeCostoEnvio" class="bg-[#F2EBDC] rounded-xl p-3 mb-4">
+                <p class="text-[#7B7369] text-xs flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i> Faltan <span id="faltaParaEnvio">$0</span> para envío gratis
+                </p>
+            </div>
+
+            <!-- Métodos de pago -->
+            <div class="mb-4">
+                <p class="font-semibold text-sm mb-2">Método de pago:</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <input type="radio" id="pagoEpayco" name="pago" value="epayco" checked class="w-4 h-4 text-[#7B7369]">
+                    <label for="pagoEpayco" class="text-sm">Pago en linea (ePayco)</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="radio" id="pagoContraentrega" name="pago" value="contraentrega" class="w-4 h-4 text-[#7B7369]">
+                    <label for="pagoContraentrega" class="text-sm">Pago contra entrega</label>
+                </div>
+            </div>
+
+            <!-- Totales -->
+            <div class="flex justify-between mb-2 text-sm"><span>Subtotal:</span><span id="cartSubtotal">$0</span></div>
+            <div id="envioRow" class="flex justify-between mb-2 text-sm"><span>Envío:</span><span id="cartEnvio">$15.000</span></div>
+            <div id="discountRow" class="flex justify-between mb-2 text-green-600 hidden"><span> Descuento:</span><span id="cartDiscount">-$0</span></div>
+            <div class="flex justify-between text-xl font-bold mb-4"><span>Total:</span><span id="cartTotal">$0</span></div>
+            <button id="checkoutBtn" class="btn-primary w-full py-3 text-sm font-semibold">Pagar</button>
+        </div>
+    </div>
+</div>
+<div id="cartOverlay" class="fixed inset-0 bg-black bg-opacity-40 z-40 hidden"></div>
+
+<!-- Modal Pack Mejorado - Versión compacta para móvil -->
+<div id="packModal" class="fixed inset-0 z-50 hidden items-center justify-center p-2 md:p-4 modal-overlay">
+    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div class="relative bg-white rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-3 md:p-6 z-10">
+        
+        <!-- Header compacto -->
+        <div class="flex justify-between items-center mb-3 md:mb-4 sticky top-0 bg-white pb-2 md:pb-4 border-b">
+            <h2 id="packModalTitle" class="text-base md:text-2xl font-bold flex items-center gap-1 md:gap-2">
+                <i class="fas fa-boxes text-[#7B7369] text-sm md:text-2xl"></i> 
+                <span class="text-sm md:text-2xl">Pack <span id="packCantidadHeader">0</span> Bodys</span>
+            </h2>
+            <button onclick="cerrarPackModal()" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex-shrink-0">
+                <i class="fas fa-times text-xs md:text-sm"></i>
+            </button>
+        </div>
+        
+        <!-- Grid: En PC 2 columnas, en móvil 1 columna -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+            
+            <!-- PANEL IZQUIERDO: Selección de producto (compacto) -->
+            <div class="bg-[#F9F6F0] rounded-xl md:rounded-2xl p-3 md:p-5">
+                <h3 class="font-bold text-sm md:text-lg mb-2 md:mb-4 flex items-center gap-1 md:gap-2">
+                    <i class="fas fa-plus-circle text-[#7B7369] text-xs md:text-xl"></i> 
+                    <span class="text-xs md:text-base">Agregar producto</span>
+                </h3>
+                
+                <!-- Vista previa de imagen -->
+                <div id="previewImagen" class="bg-white rounded-lg md:rounded-xl h-32 md:h-48 flex items-center justify-center mb-3 md:mb-4 border border-dashed border-[#7B7369] overflow-hidden">
+                    <img id="previewImg" src="" class="w-full h-full object-contain hidden">
+                    <div id="previewPlaceholder" class="text-center text-gray-400">
+                        <i class="fas fa-image text-2xl md:text-5xl mb-1 md:mb-2"></i>
+                        <p class="text-[10px] md:text-sm">Vista previa</p>
+                    </div>
+                </div>
+                
+                <!-- Selector Referencia (compacto) -->
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Referencia *</label>
+                    <select id="selectReferencia" class="w-full border border-[#F2EBDC] rounded-lg md:rounded-xl px-3 md:px-4 py-1.5 md:py-3 text-xs md:text-sm focus:outline-none focus:border-[#7B7369]">
+                        <option value="">Selecciona un modelo</option>
+                    </select>
+                </div>
+                
+                <!-- Selector Color (compacto) -->
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Color *</label>
+                    <div class="grid grid-cols-4 gap-1 md:gap-2">
+                        <button onclick="seleccionarColor('MARFIL', '#F5ECDC')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #F5ECDC; color: #4d4845;">MARFIL</button>
+                        <button onclick="seleccionarColor('NEGRO', '#1A1A1A')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #1A1A1A; color: white;">NEGRO</button>
+                        <button onclick="seleccionarColor('COCOA', '#99705D')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #99705D; color: white;">COCOA</button>
+                        <button onclick="seleccionarColor('BEIGE', '#DEC6A9')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #DEC6A9; color: #4d4845;">BEIGE</button>
+                    </div>
+                    <input type="hidden" id="selectColor" value="">
+                </div>
+                
+                <!-- Selector Talla (compacto) -->
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Talla *</label>
+                    <div class="flex gap-2 md:gap-3">
+                        <button onclick="seleccionarTallaPack('S/M')" id="tallaPack_S/M" class="talla-pack-btn flex-1 py-1 md:py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition-all duration-200 text-xs md:text-sm">S/M</button>
+                        <button onclick="seleccionarTallaPack('L/XL')" id="tallaPack_L/XL" class="talla-pack-btn flex-1 py-1 md:py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition-all duration-200 text-xs md:text-sm">L/XL</button>
+                    </div>
+                    <input type="hidden" id="selectTalla" value="">
+                </div>
+
+                <button onclick="agregarProductoAlPack()" class="btn-primary w-full py-1.5 md:py-3 rounded-full font-semibold mt-2 md:mt-4 text-xs md:text-sm">
+                    <i class="fas fa-plus mr-1 md:mr-2 text-xs"></i> Agregar
+                </button>
+            </div>
+            
+            <!-- PANEL DERECHO: Lista de productos seleccionados (compacto) -->
+            <div class="bg-white rounded-xl md:rounded-2xl p-3 md:p-5 border border-[#F2EBDC]">
+                <h3 class="font-bold text-sm md:text-lg mb-2 md:mb-4 flex items-center gap-1 md:gap-2">
+                    <i class="fas fa-list-check text-[#7B7369] text-xs md:text-xl"></i>
+                    <span class="text-xs md:text-base">Seleccionados</span>
+                    <span id="packContador" class="text-[10px] md:text-xs bg-[#F2EBDC] px-1.5 md:px-2 py-0.5 md:py-1 rounded-full ml-auto">0/0</span>
+                </h3>
+                
+                <div id="packProductosList" class="space-y-2 md:space-y-3 max-h-[250px] md:max-h-[400px] overflow-y-auto pr-1 md:pr-2">
+                    <div class="text-center text-gray-400 py-6 md:py-8">
+                        <i class="fas fa-inbox text-2xl md:text-4xl mb-1 md:mb-2"></i>
+                        <p class="text-xs md:text-sm">No hay productos</p>
+                    </div>
+                </div>
+                
+                <!-- Resumen del pack (compacto) -->
+                <div class="border-t pt-3 md:pt-4 mt-3 md:mt-4">
+                    <div class="flex justify-between items-center mb-2 md:mb-3">
+                        <span class="font-semibold text-xs md:text-base">Total:</span>
+                        <span id="packTotal" class="text-base md:text-2xl font-bold text-[#7B7369]">$0</span>
+                    </div>
+                    <button id="confirmarPackBtn" class="btn-primary w-full py-1.5 md:py-3 rounded-full font-semibold disabled:opacity-50 text-xs md:text-sm" disabled>
+                        <i class="fas fa-cart-plus mr-1 md:mr-2"></i> Agregar (<span id="packSeleccionados">0</span>/<span id="packRequeridos">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Registro -->
+<div id="registerModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div class="relative bg-white rounded-3xl max-w-md w-full p-8 z-10 bounce-animation">
+        <button onclick="closeRegisterModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200"><i class="fas fa-times"></i></button>
+        <div class="text-center">
+            <div class="bg-[#7B7369] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-gift text-2xl text-white"></i></div>
+            <h2 class="text-2xl font-bold mb-2">Bienvenido a LUMA</h2>
+            <p class="text-[#7B7369] text-sm mb-6">Crea tu cuenta y recibe <strong class="text-[#7B7369]">30% OFF</strong> en tu primera compra</p>
+            <div id="registerFormContainer">
+                <input type="text" id="regName" placeholder="Nombre completo" class="w-full border border-[#F2EBDC] rounded-2xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#7B7369]">
+                <input type="email" id="regEmail" placeholder="Correo electrónico" class="w-full border border-[#F2EBDC] rounded-2xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#7B7369]">
+                <input type="password" id="regPassword" placeholder="Contraseña" class="w-full border border-[#F2EBDC] rounded-2xl px-4 py-3 mb-4 text-sm focus:outline-none focus:border-[#7B7369]">
+                <button onclick="registerWithEmail()" class="btn-primary w-full py-3 text-sm font-semibold">Registrarme</button>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="loginWithGoogle()" class="btn-google flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2"><i class="fab fa-google"></i> Google</button>
+                    <button onclick="loginWithFacebook()" class="btn-facebook flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2"><i class="fab fa-facebook"></i> Facebook</button>
+                </div>
+                <p class="text-center text-xs mt-5">¿Ya tienes cuenta? <a href="#" onclick="showLoginForm(); return false;" class="text-[#7B7369] font-semibold">Inicia sesión</a></p>
+            </div>
+            <div id="loginFormContainer" class="hidden">
+                <input type="email" id="loginEmail" placeholder="Correo electrónico" class="w-full border border-[#F2EBDC] rounded-2xl px-4 py-3 mb-3 text-sm focus:outline-none focus:border-[#7B7369]">
+                <input type="password" id="loginPassword" placeholder="Contraseña" class="w-full border border-[#F2EBDC] rounded-2xl px-4 py-3 mb-4 text-sm focus:outline-none focus:border-[#7B7369]">
+                <button onclick="loginWithEmail()" class="btn-primary w-full py-3 text-sm font-semibold">Iniciar sesión</button>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="loginWithGoogle()" class="btn-google flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2"><i class="fab fa-google"></i> Google</button>
+                    <button onclick="loginWithFacebook()" class="btn-facebook flex-1 py-2 text-sm font-medium flex items-center justify-center gap-2"><i class="fab fa-facebook"></i> Facebook</button>
+                </div>
+                <p class="text-center text-xs mt-5">¿No tienes cuenta? <a href="#" onclick="showRegisterForm(); return false;" class="text-[#7B7369] font-semibold">Regístrate</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Producto (Vista Rápida) -->
+<div id="productModal" class="fixed inset-0 z-[99999] hidden items-center justify-center p-4" style="background: rgba(0,0,0,0.7);">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+        <button onclick="cerrarProductModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 z-20">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="productModalContent" class="p-6"></div>
+    </div>
+</div>
+<!-- Modal de Datos de Envío (Pago Contra Entrega) -->
+<div id="modalEnvio" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div class="relative bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 z-10">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Datos para la entrega</h2>
+            <button onclick="cerrarModalEnvio()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <p class="text-[#7B7369] text-sm mb-6">Completa tus datos para coordinar la entrega</p>
+        
+        <form id="formEnvio" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Nombre *</label>
+                    <input type="text" id="envioNombre" placeholder="Tu nombre" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Apellido *</label>
+                    <input type="text" id="envioApellido" placeholder="Tu apellido" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Cédula *</label>
+                    <input type="text" id="envioCedula" placeholder="Número de identificación" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Teléfono *</label>
+                    <input type="tel" id="envioTelefono" placeholder="Celular o fijo" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Ciudad *</label>
+                    <input type="text" id="envioCiudad" placeholder="Ciudad" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Dirección *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="envioDireccion" placeholder="Calle, número, barrio" class="flex-1 border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                        <button type="button" id="btnBuscarMapa" class="bg-[#7B7369] text-white px-3 py-2 rounded-xl text-sm hover:bg-[#c49464]">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="mapaContainer" class="hidden">
+                <div id="mapa" class="w-full h-64 rounded-xl border border-[#F2EBDC]"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Tipo de vivienda *</label>
+                    <select id="envioTipoVivienda" class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                        <option value="casa">Casa</option>
+                        <option value="apartamento">Apartamento</option>
+                        <option value="oficina">Oficina</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">Información adicional</label>
+                    <input type="text" id="envioInfoAdicional" placeholder="Referencia, horario, etc." class="w-full border border-[#F2EBDC] rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#7B7369]">
+                </div>
+            </div>
+            
+            <div class="bg-[#F2EBDC] p-4 rounded-xl mt-4">
+                <p class="text-sm font-semibold mb-2">Resumen del pedido:</p>
+                <div class="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span id="resumenSubtotal">$0</span>
+                </div>
+                <div class="flex justify-between text-sm" id="resumenEnvioRow">
+                    <span>Envío:</span>
+                    <span id="resumenEnvio">$0</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-[#7B7369]">
+                    <span>Total a pagar:</span>
+                    <span id="resumenTotal">$0</span>
+                </div>
+                <p class="text-xs text-[#7B7369] mt-2">* Pagas contra entrega en efectivo</p>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="cerrarModalEnvio()" class="flex-1 border border-[#7b7369] rounded-full py-2 text-sm font-semibold">Cancelar</button>
+                <button type="submit" class="flex-1 btn-primary py-2 text-sm font-semibold">Confirmar pedido</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- EmailJS SDK - Primero se carga la librería -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+        <!-- Inicialización de EmailJS -->
+        <script type="text/javascript">
+            (function(){
+        emailjs.init({
+            publicKey: "Gk3alJYiHb-SNl93m",
+                });
+            })();
+        </script>
+
+        <!-- Modal de Imagen Ampliada (Lightbox) -->
+        <div id="lightboxModal" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-black/95 backdrop-blur-sm">
+            <div class="relative max-w-[90vw] max-h-[90vh]">
+                <button onclick="cerrarLightbox()" class="absolute -top-12 right-0 text-white text-3xl hover:text-[#7B7369] transition">
+                    <i class="fas fa-times"></i>
+                </button>
+                    <img id="lightboxImage" src="" alt="Imagen ampliada" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
+                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
+                    <button id="lightboxPrev" class="bg-black/50 hover:bg-[#7B7369] text-white w-10 h-10 rounded-full transition" onclick="cambiarImagenLightbox(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="lightboxNext" class="bg-black/50 hover:bg-[#7B7369] text-white w-10 h-10 rounded-full transition" onclick="cambiarImagenLightbox(1)">
+                     <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div id="lightboxCounter" class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                    1 / 1
+                </div>
+            </div>
+        </div>
+        <!-- Scripts principales (SIEMPRE AL FINAL) -->
+        <script type="module" src="js/main.js"></script>
+        <!-- Botón flotante de WhatsApp -->
+        <a href="https://wa.me/573233877904?text=Hola%20LUMA%2C%20me%20gustar%C3%ADa%20recibir%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20productos" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20b859] text-white rounded-full p-3 md:p-4 shadow-lg transition-all duration-300 hover:scale-110 group"
+           style="box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <i class="fab fa-whatsapp text-2xl md:text-3xl"></i>
+            <span class="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-white text-[#4D4845] text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                Escríbenos
+            </span>
+        </a>
+
+        <style>
+            /* Animación suave para el botón */
+            .fixed.bottom-6.right-6 {
+                animation: pulse-whatsapp 2s infinite;
+            }
+            
+            @keyframes pulse-whatsapp {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4);
+                }
+                70% {
+                    box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+                }
+                100% {
+                    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+                }
+            }
+            
+        </style>
+</body>
+</html>

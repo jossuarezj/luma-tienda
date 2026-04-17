@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMA - Panel de Administración</title>
+
+    <!-- FAVICON -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/pdhPW4tz/Icono-1.jpg">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Lato', sans-serif; background: #F5F0E8; }
+        .login-container { max-width: 400px; margin: 100px auto; }
+        .admin-container { display: none; }
+        .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-cocoa { background: #4d4845; color: white; padding: 10px 20px; border-radius: 30px; transition: all 0.3s; cursor: pointer; }
+        .btn-cocoa:hover { background: #4a2e24; transform: scale(1.02); }
+        .cupon { background: #f0f0f0; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .estado-pendiente { background: #f39c12; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        .estado-entregado { background: #27ae60; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        .estado-devuelto { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
+        select, input { cursor: pointer; }
+        .guia-input { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .transportadora-select { width: 100px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 12px; }
+        .table-scroll { overflow-x: auto; }
+        table { min-width: 1000px; }
+        .logout-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; }
+        .logout-btn:hover { text-decoration: underline; }
+        #loginError { color: #e74c3c; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<!-- Pantalla de Login -->
+<div id="loginScreen" class="login-container">
+    <div class="card text-center">
+        <div class="w-20 h-20 bg-[#4d4845] rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-lock text-3xl text-white"></i>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">Panel Administrativo</h2>
+        <p class="text-gray-500 mb-6">Acceso exclusivo para administradores</p>
+        
+        <input type="email" id="adminEmail" placeholder="Correo electrónico" class="w-full border rounded-xl p-3 mb-3">
+        <input type="password" id="adminPassword" placeholder="Contraseña" class="w-full border rounded-xl p-3 mb-4">
+        
+        <button onclick="loginAdmin()" class="btn-cocoa w-full">Ingresar</button>
+        
+        <div id="loginError" class="hidden"></div>
+    </div>
+</div>
+
+<!-- Panel de Administración -->
+<div id="adminPanel" class="admin-container container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Panel de Administración</h1>
+        <button onclick="logoutAdmin()" class="logout-btn"><i class="fas fa-sign-out-alt mr-2"></i>Cerrar sesión</button>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="card text-center">
+            <i class="fas fa-users text-3xl text-[#4d4845] mb-2"></i>
+            <h3 class="text-2xl font-bold" id="totalClientes">0</h3>
+            <p class="text-gray-500">Clientes registrados</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-shopping-cart text-3xl text-[#4d4845] mb-2"></i>
+            <h3 class="text-2xl font-bold" id="totalVentas">0</h3>
+            <p class="text-gray-500">Total ventas</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-truck text-3xl text-[#4d4845] mb-2"></i>
+            <h3 class="text-2xl font-bold" id="totalEntregados">0</h3>
+            <p class="text-gray-500">Pedidos entregados</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-3xl text-[#4d4845] mb-2"></i>
+            <h3 class="text-2xl font-bold" id="totalIngresos">$0</h3>
+            <p class="text-gray-500">Ingresos (entregados)</p>
+        </div>
+    </div>
+    
+    <!-- Cupones -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-bold mb-4"><i class="fas fa-ticket-alt mr-2"></i>Crear Cupón de Descuento</h2>
+        <div class="grid md:grid-cols-3 gap-4 mb-4">
+            <input type="text" id="codigoCupon" placeholder="Código (ej: AMIGA20)" class="border rounded-xl p-3">
+            <input type="number" id="valorCupon" placeholder="Porcentaje (ej: 20)" class="border rounded-xl p-3">
+            <button onclick="crearCupon()" class="btn-cocoa">Crear Cupón</button>
+        </div>
+        <div id="listaCupones"></div>
+    </div>
+    
+    <!-- Lista de Ventas -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-bold mb-4"><i class="fas fa-receipt mr-2"></i>Historial de Ventas</h2>
+        <div id="listaVentas" class="table-scroll"></div>
+    </div>
+    
+    <!-- Lista de Clientes -->
+    <div class="card">
+        <h2 class="text-xl font-bold mb-4"><i class="fas fa-users mr-2"></i>Clientes Registrados</h2>
+        <div id="listaClientes" class="overflow-x-auto"></div>
+    </div>
+</div>
+
+<!-- EmailJS SDK -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+    (function(){
+        emailjs.init({
+            publicKey: "Gk3alJYiHb-SNl93m",
+        });
+    })();
+</script>
+
+<!-- Script principal con Firebase -->
+<script type="module">
+    import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './js/firebase-config.js';
+    
+    const ADMIN_EMAIL = "info@lumacolombia.com";
+    
+    // Función de login
+    window.loginAdmin = async function() {
+        const email = document.getElementById('adminEmail').value;
+        const password = document.getElementById('adminPassword').value;
+        const errorDiv = document.getElementById('loginError');
+        
+        if (!email || !password) {
+            errorDiv.innerText = 'Completa todos los campos';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        if (email !== ADMIN_EMAIL) {
+            errorDiv.innerText = 'No tienes permisos de administrador';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            errorDiv.classList.add('hidden');
+        } catch (error) {
+            errorDiv.innerText = 'Correo o contraseña incorrectos';
+            errorDiv.classList.remove('hidden');
+        }
+    };
+    
+    // Función de logout
+    window.logoutAdmin = async function() {
+        await signOut(auth);
+    };
+    
+    // Verificar estado de autenticación
+    onAuthStateChanged(auth, (user) => {
+        if (user && user.email === ADMIN_EMAIL) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            cargarDatos();
+        } else {
+            if (user) {
+                signOut(auth);
+            }
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPassword').value = '';
+        }
+    });
+    
+    function cargarDatos() {
+        cargarClientes();
+        cargarVentas();
+        cargarCupones();
+    }
+    
+    function cargarClientes() {
+        const clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
+        document.getElementById('totalClientes').innerText = clientes.length;
+        
+        const clientesHtml = `<table class="w-full text-sm">
+            <thead class="bg-gray-100">
+                <tr><th class="p-2 text-left">Nombre</th><th class="p-2 text-left">Email</th><th class="p-2 text-left">Fecha Registro</th><th class="p-2 text-left">Acciones</th></tr>
+            </thead>
+            <tbody>${clientes.map((c, idx) => `<tr><td class="p-2">${c.name}</td><td class="p-2">${c.email}</td><td class="p-2">${new Date(c.fechaRegistro).toLocaleDateString()}</td><td class="p-2"><button onclick="eliminarCliente(${idx})" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('')}</tbody>
+        </table>`;
+        document.getElementById('listaClientes').innerHTML = clientes.length ? clientesHtml : '<p class="text-gray-500">No hay clientes registrados</p>';
+    }
+    
+    window.eliminarCliente = function(index) {
+        if (confirm('¿Eliminar este cliente?')) {
+            let clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
+            clientes.splice(index, 1);
+            localStorage.setItem('lumaClientes', JSON.stringify(clientes));
+            cargarClientes();
+            cargarVentas();
+        }
+    };
+    
+    function cargarVentas() {
+        let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
+        const totalVentas = compras.length;
+        const entregados = compras.filter(v => v.estadoEnvio === 'entregado').length;
+        const ingresos = compras.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + v.total, 0);
+        
+        document.getElementById('totalVentas').innerText = totalVentas;
+        document.getElementById('totalEntregados').innerText = entregados;
+        document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
+        document.getElementById('listaVentas').innerHTML = `<p class="text-gray-500">${compras.length} ventas registradas</p>`;
+    }
+    
+    function cargarCupones() {
+        const cupones = JSON.parse(localStorage.getItem('lumaCupones')) || { "BIENVENIDA30": { tipo: "porcentaje", valor: 30, usado: false } };
+        const cuponesHtml = Object.entries(cupones).map(([codigo, cupon]) => `<div class="cupon"><div><span class="font-bold">${codigo}</span> - ${cupon.valor}% OFF ${cupon.usado ? '(Usado)' : '(Activo)'}</div><button onclick="eliminarCupon('${codigo}')" class="text-red-500"><i class="fas fa-trash"></i></button></div>`).join('');
+        document.getElementById('listaCupones').innerHTML = cuponesHtml || '<p class="text-gray-500">No hay cupones</p>';
+    }
+    
+    window.crearCupon = function() {
+        const codigo = document.getElementById('codigoCupon').value.toUpperCase();
+        const valor = parseInt(document.getElementById('valorCupon').value);
+        if (!codigo || !valor) { alert("Completa campos"); return; }
+        let cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
+        cupones[codigo] = { tipo: "porcentaje", valor: valor, usado: false };
+        localStorage.setItem('lumaCupones', JSON.stringify(cupones));
+        document.getElementById('codigoCupon').value = '';
+        document.getElementById('valorCupon').value = '';
+        cargarCupones();
+        alert(`Cupón ${codigo} creado`);
+    };
+    
+    window.eliminarCupon = function(codigo) {
+        let cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
+        delete cupones[codigo];
+        localStorage.setItem('lumaCupones', JSON.stringify(cupones));
+        cargarCupones();
+    };
+    
+    window.cargarDatos = cargarDatos;
+</script>
+
+</body>
+</html>

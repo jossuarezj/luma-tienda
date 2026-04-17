@@ -1,0 +1,77 @@
+:root {
+    --cocoa: #4d4845;
+    --cocoa-dark: #4a2e24;
+    --marfil: #F5F0E8;
+    --negro: #1A1A1A;
+    --beige: #D7C9B2;
+    --blanco: #FFFFFF;
+    --error: #e74c3c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Lato', sans-serif; background: var(--blanco); color: var(--negro); }
+h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', serif; }
+
+.btn-cocoa { background-color: var(--cocoa); color: white; transition: all 0.3s ease; cursor: pointer; }
+.btn-cocoa:hover { background-color: var(--cocoa-dark); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(92,58,46,0.3); }
+.btn-outline-cocoa { border: 2px solid var(--cocoa); color: var(--cocoa); transition: all 0.3s ease; cursor: pointer; background: white; }
+.btn-outline-cocoa:hover { background-color: var(--cocoa); color: white; transform: translateY(-2px); }
+
+.product-card { transition: all 0.4s ease; background: white; border-radius: 16px; overflow: hidden; cursor: pointer; }
+.product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+
+.model-badge { position: absolute; top: 12px; left: 12px; background: var(--cocoa); color: white; padding: 4px 14px; border-radius: 30px; font-size: 11px; font-weight: 600; z-index: 10; }
+
+.hero-gradient { background: linear-gradient(135deg, var(--marfil) 0%, var(--beige) 100%); }
+.section-title { position: relative; display: inline-block; }
+.section-title:after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 60px; height: 3px; background: var(--cocoa); }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in-up { animation: fadeInUp 0.6s ease-out; }
+
+@keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.bounce-animation { animation: bounce 0.5s ease; }
+.modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+
+.benefit-card { transition: all 0.3s ease; }
+.benefit-card:hover { transform: translateY(-5px); }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--marfil); }
+::-webkit-scrollbar-thumb { background: var(--cocoa); border-radius: 10px; }
+
+.user-dropdown { position: relative; }
+.dropdown-menu { position: absolute; top: 45px; right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-width: 160px; z-index: 100; overflow: hidden; }
+.dropdown-menu a { display: block; padding: 10px 16px; color: #333; text-decoration: none; transition: background 0.2s; }
+.dropdown-menu a:hover { background: var(--marfil); }
+.dropdown-menu .logout { color: var(--error); border-top: 1px solid #eee; }
+.dropdown-menu .logout:hover { background: #fee; }
+
+.notification { color: white !important; background-color: var(--cocoa) !important; }
+.notification i { color: white; }
+button, [onclick] { cursor: pointer; }
+.disabled { opacity: 0.5; pointer-events: none; }
+
+/* Estilos botones sociales estilo original */
+.btn-google {
+    background-color: white;
+    color: #757575;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+}
+.btn-google:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+.btn-facebook {
+    background-color: #1877F2;
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+.btn-facebook:hover {
+    background-color: #1666d6;
+}
+.btn-facebook i, .btn-google i {
+    font-size: 1.2rem;
+}
