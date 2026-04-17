@@ -379,10 +379,9 @@ export async function finalizarCompraConDatosEnvio(datos) {
     if (cartSidebar) cartSidebar.classList.add('translate-x-full');
     if (cartOverlay) cartOverlay.classList.add('hidden');
     
-    // Esperar 5 segundos ANTES de recargar
-    console.log("⏳ Esperando 5 segundos antes de recargar...");
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    window.location.href = window.location.pathname;
+    // Actualizar UI sin recargar
+    updateCartUI();
+    console.log("✅ Compra completada exitosamente");
 }
 
 function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, total, datos) {
