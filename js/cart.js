@@ -342,7 +342,6 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
         metodoPago: "contraentrega",
         datosEnvio: datos,
         numeroPedido: numeroPedido,
-        numeroPedido: 'LUMA-' + Date.now(),
         estadoEnvio: "confirmado",
         fecha: new Date().toISOString()
     };
