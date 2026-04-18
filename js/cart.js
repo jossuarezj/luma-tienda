@@ -1,6 +1,7 @@
 import { getCurrentUser } from './auth.js';
 import { productos } from './products.js';
 import { guardarVentaFirestore } from './firebase-ventas.js';
+import { cargarCuponesFirestore, marcarCuponUsado } from './firebase-cupones.js';
 
 // Función de notificación (igual que en main.js)
 function mostrarMensaje(mensaje, tipo = "success") {
@@ -462,6 +463,43 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
     if (cartSidebar) cartSidebar.classList.add('translate-x-full');
     if (cartOverlay) cartOverlay.classList.add('hidden');
 }
+// ==================== FUNCIÓN PARA APLICAR CUPÓN DESDE FIRESTORE ====================
+
+export async function aplicarCupon(codigo) {
+    try {
+        const cupones = await cargarCuponesFirestore();
+        const cupon = cupones.find(c => c.codigo === codigo && c.activo === true && c.usado === false);
+        
+        if (!cupon) {
+            return { success: false, message: "Cupón inválido o ya usado" };
+        }
+        
+        // Guardar cupón aplicado en memoria
+        cuponAplicado = cupon.codigo;
+        cuponInfo = cupon;
+        localStorage.setItem('cuponAplicado', cupon.codigo);
+        
+        updateCartUI();
+        return { success: true, message: `Cupón ${cupon.codigo} aplicado! ${cupon.valor}% descuento` };
+    } catch (error) {
+        console.error("Error aplicando cupón:", error);
+        return { success: false, message: "Error al aplicar cupón" };
+    }
+}
+
+// Función para marcar cupón como usado después de la compra
+export async function marcarCuponComoUsado(codigo, emailUsuario) {
+    try {
+        await marcarCuponUsado(codigo, emailUsuario);
+        cuponAplicado = null;
+        cuponInfo = null;
+        localStorage.removeItem('cuponAplicado');
+        console.log(`✅ Cupón ${codigo} marcado como usado`);
+    } catch (error) {
+        console.error("Error marcando cupón:", error);
+    }
+}
+
 // Exportar funciones necesarias
 
 export function getCart() {
