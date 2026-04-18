@@ -1070,7 +1070,13 @@ window.confirmarPedidoFinal = function(datosStr) {
     cerrarModalConfirmacionPrevia();
     guardarDatosEnvio(datos);
     
-    // ✅ PRIMERO: Marcar el descuento (antes de limpiar el carrito)
+    // ✅ GENERAR NÚMERO DE PEDIDO ÚNICO (UNA SOLA VEZ)
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 6);
+    const numeroPedido = `LUMA-${timestamp}-${random}`;
+    
+    console.log("📝 Número de pedido generado:", numeroPedido);
+    
     const user = getCurrentUser();
     const carritoItems = getCart();
     const itemsNormales = carritoItems.filter(item => !item.esParteDePack && !item.esPack);
@@ -1087,7 +1093,7 @@ window.confirmarPedidoFinal = function(datosStr) {
         localStorage.setItem('lumaCouponUsed', 'true');
     }
     
-    // Enviar correo de confirmación para contraentrega
+    // Enviar correo de confirmación
     (async () => {
         try {
             const carritoActual = getCart();
@@ -1109,8 +1115,9 @@ window.confirmarPedidoFinal = function(datosStr) {
                 descuento = subtotal * 0.3;
             }
             
-            const envio = subtotal >= 99990 ? 0 : 17500;
-            const total = subtotal - descuento + envio;
+            const envioGratis = subtotal >= 99990;
+            const costoEnvio = envioGratis ? 0 : 17500;
+            const total = subtotal - descuento + costoEnvio;
             
             const productosCorreo = itemsVisibles.map(item => ({
                 nombre: item.nombre,
@@ -1119,19 +1126,13 @@ window.confirmarPedidoFinal = function(datosStr) {
                 precio: item.precio
             }));
             
-            const userActual = getCurrentUser();
-
-            // Calcular envío (gratis si subtotal >= 99990)
-            const envioGratis = subtotal >= 99990;
-            const costoEnvio = envioGratis ? 0 : 17500;
-
             const datosCorreo = {
                 nombre: datos.nombre,
-                email: userActual?.email || 'cliente@email.com',
-                numeroPedido: 'LUMA-' + Date.now(),
+                email: user?.email || 'cliente@email.com',
+                numeroPedido: numeroPedido,  // ← USAR EL MISMO NÚMERO
                 subtotal: subtotal,
-                costoEnvio: costoEnvio,  // ← AGREGAR
-                envioGratis: envioGratis, // ← AGREGAR
+                costoEnvio: costoEnvio,
+                envioGratis: envioGratis,
                 total: total,
                 metodoPago: 'contraentrega',
                 direccion: datos.direccion,
@@ -1140,23 +1141,20 @@ window.confirmarPedidoFinal = function(datosStr) {
             };
             
             await enviarCorreoConfirmacion(datosCorreo);
-            console.log('✅ Correo contraentrega enviado a:', datosCorreo.email);
+            console.log('✅ Correo enviado a:', datosCorreo.email);
         } catch (errorCorreo) {
-            console.error('❌ Error al enviar correo contraentrega:', errorCorreo);
+            console.error('❌ Error al enviar correo:', errorCorreo);
         }
     })();
     
-    // ✅ LUEGO: Finalizar compra (esto limpia el carrito)
-    window.finalizarCompraConDatosEnvio(datos);
+    // ✅ PASAR EL NÚMERO DE PEDIDO A finalizarCompraConDatosEnvio
+    window.finalizarCompraConDatosEnvio(datos, numeroPedido);
     cerrarModalEnvio();
     
-    // Recargar la página para actualizar el estado
     setTimeout(() => {
         window.location.reload();
     }, 10000);
 };
-
-
 
 
 

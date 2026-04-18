@@ -281,7 +281,7 @@ export function getResumenPedido() {
     return { subtotal, envio: costoEnvio, total, envioGratis };
 }
 
-export async function finalizarCompraConDatosEnvio(datos) {
+export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     console.log("🚀 INICIANDO finalizarCompraConDatosEnvio");
     
     const user = getCurrentUser();
@@ -341,6 +341,7 @@ export async function finalizarCompraConDatosEnvio(datos) {
         total: total,
         metodoPago: "contraentrega",
         datosEnvio: datos,
+        numeroPedido: numeroPedido,
         numeroPedido: 'LUMA-' + Date.now(),
         estadoEnvio: "confirmado",
         fecha: new Date().toISOString()
@@ -360,7 +361,7 @@ export async function finalizarCompraConDatosEnvio(datos) {
     
     // Guardar en localStorage como respaldo
     let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-    compras.push({ ...ventaData, idFirestore: ventaId || 'no-firestore' });
+    compras.push({ ...ventaData, idFirestore: ventaId || 'no-firestore' }); 
     localStorage.setItem('lumaCompras', JSON.stringify(compras));
     console.log("💾 Guardado en localStorage. Total compras:", compras.length);
     
