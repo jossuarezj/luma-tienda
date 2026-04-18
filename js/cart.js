@@ -480,7 +480,7 @@ export async function aplicarCupon(codigo) {
         localStorage.setItem('cuponAplicado', cupon.codigo);
         
         updateCartUI();
-        return { success: true, message: `Cupón ${cupon.codigo} aplicado! ${cupon.valor}% descuento` };
+        return { success: true, message: `✅ Cupón ${cupon.codigo} aplicado! ${cupon.valor}% de descuento` };
     } catch (error) {
         console.error("Error aplicando cupón:", error);
         return { success: false, message: "Error al aplicar cupón" };
