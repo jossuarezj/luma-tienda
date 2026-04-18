@@ -359,6 +359,9 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
         console.error("❌ Error guardando en Firestore:", error);
     }
     
+    if (cuponAplicado) {
+    await marcarCuponComoUsado(cuponAplicado, user.email);
+    }
     // Guardar en localStorage como respaldo
     let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
     compras.push({ ...ventaData, idFirestore: ventaId || 'no-firestore' }); 
