@@ -1312,7 +1312,7 @@ const checkoutBtn = document.getElementById('checkoutBtn');
 
 const aplicarCuponBtn = document.getElementById('aplicarCuponCarrito');
 if (aplicarCuponBtn) {
-    aplicarCuponBtn.addEventListener('click', () => {
+    aplicarCuponBtn.addEventListener('click', async () => {
         const codigo = document.getElementById('codigoCuponCarrito').value;
         const mensajeDiv = document.getElementById('cuponMensajeCarrito');
         
@@ -1322,16 +1322,16 @@ if (aplicarCuponBtn) {
             return;
         }
         
-        import('./cart.js').then(module => {
-            const resultado = module.aplicarCupon(codigo);
-            mensajeDiv.innerHTML = `<span class="${resultado.success ? 'text-green-600' : 'text-red-500'}">${resultado.message}</span>`;
-            mensajeDiv.classList.remove('hidden');
-            
-            if (resultado.success) {
-                document.getElementById('codigoCuponCarrito').value = '';
-                setTimeout(() => mensajeDiv.classList.add('hidden'), 3000);
-            }
-        });
+        const { aplicarCupon } = await import('./cart.js');
+        const resultado = await aplicarCupon(codigo);
+        
+        mensajeDiv.innerHTML = `<span class="${resultado.success ? 'text-green-600' : 'text-red-500'}">${resultado.message}</span>`;
+        mensajeDiv.classList.remove('hidden');
+        
+        if (resultado.success) {
+            document.getElementById('codigoCuponCarrito').value = '';
+            setTimeout(() => mensajeDiv.classList.add('hidden'), 3000);
+        }
     });
 }
 
