@@ -221,86 +221,65 @@ window.showTab = function(tab) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-function cargarHistorialCompras() {
+async function cargarHistorialCompras() {
     const user = getCurrentUser();
     if (!user) {
         document.getElementById('historialCompras').innerHTML = '<div class="text-center py-12"><i class="fas fa-sign-in-alt text-5xl text-gray-300 mb-4"></i><p class="text-gray-400">Inicia sesión para ver tus compras</p></div>';
         return;
     }
     
-    const compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-    const misCompras = compras.filter(c => c.usuario === user.name || c.email === user.email);
-    
-    const container = document.getElementById('historialCompras');
-    if (!container) return;
-    
-    if (misCompras.length === 0) {
-        container.innerHTML = '<div class="text-center py-12"><i class="fas fa-receipt text-5xl text-gray-300 mb-4"></i><p class="text-gray-400">No has realizado compras aún</p></div>';
-        return;
-    }
-    
-    container.innerHTML = misCompras.reverse().map(compra => {
-        let productos = compra.productos || [];
-        const itemsMostrar = productos.filter(item => !item.esParteDePack);
-        const numeroPedido = compra.numeroPedido || 'LUMA-' + compra.id;
+    try {
+        // Importar función desde firebase-ventas.js
+        const { cargarVentasFirestore } = await import('./firebase-ventas.js');
+        const todasVentas = await cargarVentasFirestore();
         
-        return `
-        <div class="bg-white rounded-xl shadow-md p-4 border border-[#F2EBDC] mb-4">
-            <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
-                <div>
-                    <span class="text-sm text-gray-500">${new Date(compra.fecha).toLocaleDateString()}</span>
-                    <p class="font-bold">Total: $${(compra.total || 0).toLocaleString()}</p>
+        // Filtrar solo las ventas del usuario actual
+        const misCompras = todasVentas.filter(v => v.email === user.email);
+        
+        const container = document.getElementById('historialCompras');
+        if (!container) return;
+        
+        if (misCompras.length === 0) {
+            container.innerHTML = '<div class="text-center py-12"><i class="fas fa-receipt text-5xl text-gray-300 mb-4"></i><p class="text-gray-400">No has realizado compras aún</p></div>';
+            return;
+        }
+        
+        container.innerHTML = misCompras.reverse().map(compra => {
+            const numeroPedido = compra.numeroPedido || 'LUMA-' + compra.id;
+            const productos = compra.productos || [];
+            
+            return `
+            <div class="bg-white rounded-xl shadow-md p-4 border border-[#F2EBDC] mb-4">
+                <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
+                    <div>
+                        <span class="text-sm text-gray-500">${new Date(compra.fecha).toLocaleDateString()}</span>
+                        <p class="font-bold">Total: $${(compra.total || 0).toLocaleString()}</p>
+                    </div>
+                    <span class="text-green-600 text-sm bg-green-50 px-2 py-1 rounded-full">✅ ${compra.estadoEnvio === 'entregado' ? 'Entregado' : 'Confirmado'}</span>
                 </div>
-                <div class="flex gap-2">
-                    ${compra.descuento > 0 ? '<span class="text-green-600 text-sm bg-green-50 px-2 py-1 rounded-full">🎉 Descuento aplicado</span>' : ''}
-                    ${compra.estado === 'Pagado' ? '<span class="text-green-600 text-sm bg-green-50 px-2 py-1 rounded-full">✅ Pagado</span>' : ''}
-                </div>
-            </div>
-            <div class="border-t pt-3 border-[#F2EBDC]">
-                <p class="text-sm font-semibold mb-2">Productos:</p>
-                <div class="flex flex-wrap gap-2">
-                    ${itemsMostrar.map(item => {
-                        if (item.esPack) {
-                            return `
-                                <div class="text-xs bg-[#F2EBDC] px-3 py-2 rounded-lg w-full mb-2">
-                                    <p class="font-semibold">📦 ${item.nombre}</p>
-                                    <p class="text-gray-600 mt-1">Incluye:</p>
-                                    <ul class="list-disc list-inside ml-2">
-                                        ${(item.productosIncluidosDetalle || []).map(prod => `
-                                            <li>${prod.nombre} - ${prod.colorNombre} (${prod.talla}) x${prod.cantidad || 1}</li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            `;
-                        }
-                        return `
+                <div class="border-t pt-3 border-[#F2EBDC]">
+                    <p class="text-sm font-semibold mb-2">Productos:</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${productos.map(item => `
                             <span class="text-xs bg-[#F9F6F0] px-2 py-1 rounded-full">
                                 ${item.nombre || item.NOMBRE || 'Producto'} 
                                 ${item.colorNombre || item.COLORNOMBRE || ''} 
                                 ${item.talla ? `(${item.talla})` : ''} 
                                 x${item.cantidad || 1}
                             </span>
-                        `;
-                    }).join('')}
+                        `).join('')}
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">🔖 N° Pedido: ${numeroPedido}</p>
                 </div>
-                <div class="flex justify-between items-center mt-3 flex-wrap gap-2">
-                    <p class="text-xs text-gray-400">🔖 N° Pedido: ${numeroPedido}</p>
-                    <button onclick="solicitarCambio('${numeroPedido}')" 
-                            class="bg-[#7B7369] hover:bg-[#4D4845] text-white text-xs px-3 py-1.5 rounded-full transition flex items-center gap-1">
-                        <i class="fas fa-exchange-alt"></i> Realizar cambio
-                    </button>
-                </div>
-                ${compra.metodoPago ? `<p class="text-xs text-gray-400 mt-1">💳 Pago: ${compra.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)'}</p>` : ''}
             </div>
-        </div>
-    `}).join('');
+        `}).join('');
+    } catch (error) {
+        console.error("Error cargando historial:", error);
+        container.innerHTML = '<div class="text-center py-12"><p class="text-red-500">Error al cargar el historial</p></div>';
+    }
 }
 
 window.setFilter = function(color) { currentFilter = color; renderFilters(); renderProducts(); };
-
-// ==================== PACKS ====================
-
-// ==================== PACKS ====================
 
 // ==================== VARIABLES PARA PACK MEJORADO ====================
 let packCantidadActual = 0;
