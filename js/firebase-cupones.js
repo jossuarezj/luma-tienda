@@ -1,6 +1,6 @@
 // js/firebase-cupones.js
 import { db } from './firebase-config.js';
-import { collection, getDocs, addDoc, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const CUPONES_COLLECTION = "cupones";
 
@@ -62,6 +62,28 @@ export async function eliminarCuponFirestore(id) {
         return true;
     } catch (error) {
         console.error("❌ Error eliminando cupón:", error);
+        return false;
+    }
+}
+
+// Resetear cupón (marcarlo como no usado)
+export async function resetearCuponFirestore(codigo) {
+    try {
+        const q = query(collection(db, CUPONES_COLLECTION), where("codigo", "==", codigo));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const docRef = doc(db, CUPONES_COLLECTION, querySnapshot.docs[0].id);
+            await updateDoc(docRef, { 
+                usado: false,
+                usadoPor: null,
+                fechaUso: null
+            });
+            console.log("✅ Cupón reseteado:", codigo);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error("❌ Error reseteando cupón:", error);
         return false;
     }
 }
