@@ -90,6 +90,11 @@
         <div class="grid md:grid-cols-3 gap-4 mb-4">
             <input type="text" id="codigoCupon" placeholder="Código (ej: AMIGA20)" class="border rounded-xl p-3">
             <input type="number" id="valorCupon" placeholder="Porcentaje (ej: 20)" class="border rounded-xl p-3">
+            <select id="aplicaACupon" class="border rounded-xl p-3">
+                <option value="individuales">Solo productos individuales</option>
+                <option value="packs">Solo packs</option>
+                <option value="todos">Todos los productos</option>
+            </select>
             <button onclick="crearCupon()" class="btn-cocoa">Crear Cupón</button>
         </div>
         <div id="listaCupones"></div>
@@ -123,6 +128,7 @@
 <script type="module">
     import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './js/firebase-config.js';
     import { cargarVentasFirestore, actualizarVentaFirestore, eliminarVentaFirestore } from './js/firebase-ventas.js';
+    import { cargarCuponesFirestore, guardarCuponFirestore, eliminarCuponFirestore } from './js/firebase-cupones.js';
     
     const ADMIN_EMAIL = "info@lumacolombia.com";
     let ventasCache = [];
@@ -176,7 +182,7 @@
     async function cargarDatos() {
         cargarClientes();
         await cargarVentas();
-        cargarCupones();
+        await cargarCupones();
     }
     
     function cargarClientes() {
@@ -445,35 +451,78 @@
         }
     };
     
-    function cargarCupones() {
-        const cupones = JSON.parse(localStorage.getItem('lumaCupones')) || { "BIENVENIDA30": { tipo: "porcentaje", valor: 30, usado: false } };
-        const cuponesHtml = Object.entries(cupones).map(([codigo, cupon]) => `
-            <div class="cupon">
-                <div><span class="font-bold">${codigo}</span> - ${cupon.valor}% OFF ${cupon.usado ? '(Usado)' : '(Activo)'}</div>
-                <button onclick="eliminarCupon('${codigo}')" class="text-red-500"><i class="fas fa-trash"></i></button>
-            </div>
-        `).join('');
-        document.getElementById('listaCupones').innerHTML = cuponesHtml || '<p class="text-gray-500">No hay cupones</p>';
+    // ==================== CUPONES CON FIRESTORE ====================
+    
+    async function cargarCupones() {
+        try {
+            const cupones = await cargarCuponesFirestore();
+            
+            if (cupones.length === 0) {
+                document.getElementById('listaCupones').innerHTML = '<p class="text-gray-500">No hay cupones</p>';
+                return;
+            }
+            
+            const cuponesHtml = cupones.map(cupon => `
+                <div class="cupon">
+                    <div><span class="font-bold">${cupon.codigo}</span> - ${cupon.valor}% OFF (${cupon.aplicaA || 'todos'})</div>
+                    <button onclick="eliminarCupon('${cupon.id}')" class="text-red-500"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+            document.getElementById('listaCupones').innerHTML = cuponesHtml;
+        } catch (error) {
+            console.error("Error cargando cupones:", error);
+            document.getElementById('listaCupones').innerHTML = '<p class="text-red-500">Error al cargar cupones</p>';
+        }
     }
     
-    window.crearCupon = function() {
+    window.crearCupon = async function() {
         const codigo = document.getElementById('codigoCupon').value.toUpperCase();
         const valor = parseInt(document.getElementById('valorCupon').value);
-        if (!codigo || !valor) { alert("Completa campos"); return; }
-        let cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
-        cupones[codigo] = { tipo: "porcentaje", valor: valor, usado: false };
-        localStorage.setItem('lumaCupones', JSON.stringify(cupones));
-        document.getElementById('codigoCupon').value = '';
-        document.getElementById('valorCupon').value = '';
-        cargarCupones();
-        alert(`Cupón ${codigo} creado`);
+        const aplicaA = document.getElementById('aplicaACupon').value;
+        
+        if (!codigo || !valor) { 
+            alert("Completa todos los campos"); 
+            return; 
+        }
+        
+        try {
+            const nuevoCupon = {
+                codigo: codigo,
+                valor: valor,
+                tipo: "porcentaje",
+                aplicaA: aplicaA,
+                activo: true,
+                usosMaximos: 1,
+                usosPorUsuario: [],
+                fechaInicio: new Date("2026-01-01"),
+                fechaFin: new Date("2026-12-31")
+            };
+            
+            await guardarCuponFirestore(nuevoCupon);
+            
+            document.getElementById('codigoCupon').value = '';
+            document.getElementById('valorCupon').value = '';
+            document.getElementById('aplicaACupon').value = 'individuales';
+            
+            await cargarCupones();
+            alert(`✅ Cupón ${codigo} creado correctamente`);
+        } catch (error) {
+            console.error("Error creando cupón:", error);
+            alert("❌ Error al crear cupón");
+        }
     };
     
-    window.eliminarCupon = function(codigo) {
-        let cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
-        delete cupones[codigo];
-        localStorage.setItem('lumaCupones', JSON.stringify(cupones));
-        cargarCupones();
+    window.eliminarCupon = async function(id) {
+        if (confirm('¿Eliminar este cupón?')) {
+            try {
+                await eliminarCuponFirestore(id);
+                await cargarCupones();
+                alert("✅ Cupón eliminado");
+            } catch (error) {
+                console.error("Error eliminando cupón:", error);
+                alert("❌ Error al eliminar cupón");
+            }
+        }
     };
     
     window.cargarDatos = cargarDatos;
