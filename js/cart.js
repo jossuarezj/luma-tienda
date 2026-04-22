@@ -440,6 +440,7 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     console.log("🗑️ Carrito limpiado");
     
     // Mostrar modal de confirmación
+    const subtotalConDescuento = subtotal - descuento;
     mostrarModalConfirmacion(user, itemsVisibles, subtotal, descuento, costoEnvioActual, total, datos);
     console.log("🔄 Modal mostrado");
     
@@ -471,16 +472,18 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
                         <h3 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-box text-[#7B7369]"></i> Resumen del pedido</h3>
                         <div class="space-y-2">
                             ${productos.map(p => {
-                                // Usar precio con descuento (p.precio) o precio original (p.PRECIO)
-                                const precioUnitario = p.precio || p.PRECIO || 0;
+                                // Si hay descuento, calcular el precio proporcional
+                                let precioUnitario = p.precio || p.PRECIO || 0;
+                                if (descuento > 0 && subtotal > 0) {
+                                    // Aplicar el descuento proporcional al producto
+                                    const proporcion = (p.precio * p.cantidad) / subtotal;
+                                    precioUnitario = precioUnitario * (1 - (descuento / subtotal));
+                                }
                                 const cantidad = p.cantidad || 1;
-                                const subtotalProducto = precioUnitario * cantidad;
-                                const nombreProducto = p.nombre || p.NOMBRE || 'Producto';
-                                const colorProducto = p.colorNombre || p.COLORNOMBRE || '';
                                 return `
                                     <div class="flex justify-between text-sm">
-                                        <span>${nombreProducto} ${colorProducto} x${cantidad}</span>
-                                        <span class="font-medium">$${subtotalProducto.toLocaleString()}</span>
+                                        <span>${p.nombre || p.NOMBRE} ${p.colorNombre || p.COLORNOMBRE || ''} x${cantidad}</span>
+                                        <span class="font-medium">$${Math.round(precioUnitario * cantidad).toLocaleString()}</span>
                                     </div>
                                 `;
                             }).join('')}
