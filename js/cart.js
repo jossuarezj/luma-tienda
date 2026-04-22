@@ -656,3 +656,5 @@ window.cerrarModalConfirmacion = function() {
     const modal = document.getElementById('modalConfirmacion');
     if (modal) modal.remove();
 };
+
+export { cuponAplicado, cuponInfo };

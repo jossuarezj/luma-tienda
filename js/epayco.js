@@ -37,33 +37,45 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
     let cuponAplicado = localStorage.getItem('cuponAplicado');
     let cuponInfo = null;
     
-    // Verificar si hay productos individuales (NO packs)
-    const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
-    
-    // Verificar si el usuario ya usó el descuento (por email)
-    let descuentoYaUsado = false;
-    if (user && user.email) {
-        descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${user.email}`) === 'true';
-    }
-    
     if (cuponAplicado) {
-        const cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
-        cuponInfo = cupones[cuponAplicado];
-        if (cuponInfo && !cuponInfo.usado) {
-            descuento = subtotal * (cuponInfo.valor / 100);
+        // Intentar cargar desde localStorage primero
+        const cuponesLocal = JSON.parse(localStorage.getItem('lumaCupones')) || {};
+        cuponInfo = cuponesLocal[cuponAplicado];
+        
+        // Si no está en localStorage, intentar desde Firestore (simplificado)
+        if (!cuponInfo) {
+            try {
+                const { cargarCuponesFirestore } = await import('./firebase-cupones.js');
+                const cuponesFS = await cargarCuponesFirestore();
+                cuponInfo = cuponesFS.find(c => c.codigo === cuponAplicado && c.activo === true);
+            } catch(e) { console.log("Error cargando cupón desde Firestore", e); }
         }
-    } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
-        descuento = subtotal * 0.3;
+        
+        if (cuponInfo && !cuponInfo.usado) {
+            if (cuponInfo.tipo === "porcentaje") {
+                descuento = subtotal * (cuponInfo.valor / 100);
+            } else {
+                descuento = Math.min(cuponInfo.valor, subtotal);
+            }
+        }
+    } else if (user.primeraCompra && !usedCoupon) {
+        // Verificar si hay productos individuales (NO packs)
+        const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
+        if (hayProductosIndividuales) {
+            descuento = subtotal * 0.3;
+        }
     }
     
-    // Calcular envío (gratis si subtotal >= 99990)
+    // Calcular envío
     const UMBRAL_ENVIO_GRATIS = 99990;
     const costoEnvio = subtotal >= UMBRAL_ENVIO_GRATIS ? 0 : 17500;
-    const totalConEnvio = subtotal - descuento + costoEnvio;
+    const totalConDescuento = subtotal - descuento;
+    const totalConEnvio = totalConDescuento + costoEnvio;
     
-    console.log("Descuento:", descuento);
+    console.log("Descuento aplicado:", descuento);
+    console.log("Subtotal con descuento:", totalConDescuento);
     console.log("Costo envío:", costoEnvio);
-    console.log("Total a pagar con envío:", totalConEnvio);
+    console.log("Total a pagar:", totalConEnvio);
     
     const descripcionProductos = itemsVisibles.map(item => 
         `${item.nombre} ${item.colorNombre || ''} ${item.talla ? `Talla ${item.talla}` : ''} x${item.cantidad}`
@@ -110,7 +122,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         window.epaycoCallback = async function(response) {
             console.log("Respuesta ePayco:", response);
             if (response && response.status === "Aceptada") {
-                // Guardar compra con todos los detalles
                 let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
                 compras.push({ 
                     id: Date.now(), 
@@ -121,8 +132,8 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
                     fecha: new Date().toISOString(), 
                     productos: itemsVisibles, 
                     subtotal: subtotal, 
-                    descuento: descuento,           // ← DEBE ESTAR
-                    cuponAplicado: cuponAplicado,   // ← DEBE ESTAR
+                    descuento: descuento,
+                    cuponAplicado: cuponAplicado,
                     envio: costoEnvio,
                     total: totalConEnvio,
                     metodoPago: "epayco",
@@ -130,7 +141,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
                 });
                 localStorage.setItem('lumaCompras', JSON.stringify(compras));
 
-                // Enviar correo de confirmación
                 try {
                     const productosCorreo = itemsVisibles.map(item => ({
                         nombre: item.nombre,
@@ -156,7 +166,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
                     console.error('❌ Error al enviar correo:', errorCorreo);
                 }
                 
-                // ✅ MARCAR DESCUENTO COMO USADO (por email)
                 const userActual = getCurrentUser();
                 if (userActual && userActual.email && !usedCoupon) {
                     localStorage.setItem(`luma_descuento_usado_${userActual.email}`, 'true');
@@ -164,7 +173,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
                     localStorage.setItem('lumaCouponUsed', 'true');
                 }
                 
-                // Limpiar carrito
                 localStorage.removeItem('lumaCart');
                 localStorage.removeItem('cuponAplicado');
                 window.location.reload();
