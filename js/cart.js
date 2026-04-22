@@ -456,6 +456,9 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
 }
 
 function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, total, datos) {
+    // Calcular el subtotal con descuento para la proporción
+    const subtotalConDescuento = subtotal - descuento;
+    
     const modalHTML = `
         <div id="modalConfirmacion" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.7);">
             <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -472,17 +475,22 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
                         <h3 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-box text-[#7B7369]"></i> Resumen del pedido</h3>
                         <div class="space-y-2">
                             ${productos.map(p => {
-                                // Si hay descuento, calcular el precio proporcional
                                 let precioUnitario = p.precio || p.PRECIO || 0;
-                                if (descuento > 0 && subtotal > 0) {
-                                    // Aplicar el descuento proporcional al producto
-                                    const proporcion = (p.precio * p.cantidad) / subtotal;
-                                    precioUnitario = precioUnitario * (1 - (descuento / subtotal));
-                                }
                                 const cantidad = p.cantidad || 1;
+                                
+                                // Aplicar descuento proporcional si existe
+                                if (descuento > 0 && subtotal > 0) {
+                                    const proporcion = (precioUnitario * cantidad) / subtotal;
+                                    const descuentoProducto = descuento * proporcion;
+                                    precioUnitario = precioUnitario - (descuentoProducto / cantidad);
+                                }
+                                
+                                const nombreProducto = p.nombre || p.NOMBRE || 'Producto';
+                                const colorProducto = p.colorNombre || p.COLORNOMBRE || '';
+                                
                                 return `
                                     <div class="flex justify-between text-sm">
-                                        <span>${p.nombre || p.NOMBRE} ${p.colorNombre || p.COLORNOMBRE || ''} x${cantidad}</span>
+                                        <span>${nombreProducto} ${colorProducto} x${cantidad}</span>
                                         <span class="font-medium">$${Math.round(precioUnitario * cantidad).toLocaleString()}</span>
                                     </div>
                                 `;
