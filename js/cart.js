@@ -560,7 +560,11 @@ export async function aplicarCupon(codigo) {
         }
         
         // Validar usos por usuario
-        const usosPorUsuario = cupon.usosPorUsuario || [];
+        let usosPorUsuario = cupon.usosPorUsuario;
+        // Si es null, undefined, o no es array, convertirlo a array vacío
+        if (!usosPorUsuario || !Array.isArray(usosPorUsuario)) {
+            usosPorUsuario = [];
+        }
         if (cupon.usosMaximos > 0 && usosPorUsuario.length >= cupon.usosMaximos) {
             return { success: false, message: "Cupón agotado" };
         }

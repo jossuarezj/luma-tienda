@@ -57,17 +57,18 @@ export async function marcarCuponUsado(codigo, emailUsuario) {
         if (!querySnapshot.empty) {
             const docRef = doc(db, CUPONES_COLLECTION, querySnapshot.docs[0].id);
             const cupon = querySnapshot.docs[0].data();
-            const usadoPor = cupon.usadoPor || [];
+            let usosPorUsuario = cupon.usosPorUsuario || [];
+            if (!Array.isArray(usosPorUsuario)) {
+                usosPorUsuario = [];
+            }
             
-            // Verificar si el usuario ya usó el cupón
-            if (usadoPor.includes(emailUsuario)) {
+            if (usosPorUsuario.includes(emailUsuario)) {
                 console.log(`❌ Usuario ${emailUsuario} ya usó el cupón ${codigo}`);
                 return false;
             }
             
-            // Agregar el email del usuario al array
-            usadoPor.push(emailUsuario);
-            await updateDoc(docRef, { usadoPor: usadoPor });
+            usosPorUsuario.push(emailUsuario);
+            await updateDoc(docRef, { usosPorUsuario: usosPorUsuario });
             console.log(`✅ Cupón ${codigo} marcado como usado por ${emailUsuario}`);
             return true;
         }
@@ -78,14 +79,20 @@ export async function marcarCuponUsado(codigo, emailUsuario) {
     }
 }
 
-// Eliminar un cupón
-export async function eliminarCuponFirestore(id) {
+// Resetear cupón
+export async function resetearCuponFirestore(codigo) {
     try {
-        await deleteDoc(doc(db, CUPONES_COLLECTION, id));
-        console.log("✅ Cupón eliminado:", id);
-        return true;
+        const q = query(collection(db, CUPONES_COLLECTION), where("codigo", "==", codigo));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const docRef = doc(db, CUPONES_COLLECTION, querySnapshot.docs[0].id);
+            await updateDoc(docRef, { usosPorUsuario: [] });
+            console.log(`✅ Cupón ${codigo} reseteado`);
+            return true;
+        }
+        return false;
     } catch (error) {
-        console.error("❌ Error eliminando cupón:", error);
+        console.error("❌ Error reseteando cupón:", error);
         return false;
     }
 }
@@ -108,4 +115,4 @@ export async function resetearCuponFirestore(codigo) {
         console.error("❌ Error reseteando cupón:", error);
         return false;
     }
-}
+}   
