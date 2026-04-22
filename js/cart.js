@@ -470,13 +470,18 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
                     <div class="border-b pb-4 mb-4">
                         <h3 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-box text-[#7B7369]"></i> Resumen del pedido</h3>
                         <div class="space-y-2">
-                            ${productos.map(p => `
+                            ${productos.map(p => {
+                            // Usar p.precio (que ya tiene el descuento) en lugar de p.PRECIO
+                            const precioFinal = p.precio || p.PRECIO || 0;
+                            const cantidad = p.cantidad || 1;
+                            const subtotalProducto = precioFinal * cantidad;
+                            return `
                                 <div class="flex justify-between text-sm">
-                                    <span>${p.NOMBRE} ${p.COLORNOMBRE || ''} x${p.cantidad}</span>
-                                    <span class="font-medium">$${(p.PRECIO * p.cantidad).toLocaleString()}</span>
+                                    <span>${p.nombre || p.NOMBRE} ${p.colorNombre || p.COLORNOMBRE || ''} x${cantidad}</span>
+                                    <span class="font-medium">$${subtotalProducto.toLocaleString()}</span>
                                 </div>
-                            `).join('')}
-                        </div>
+                            `;
+                        }).join('')}
                     </div>
                     
                     <div class="bg-[#F2EBDC] p-4 rounded-xl mb-4">

@@ -1024,8 +1024,11 @@ function mostrarConfirmacionAntesDeFinalizar(datos) {
                     ${datos.infoAdicional ? `<p class="text-sm text-gray-500 mt-1">Referencia: ${datos.infoAdicional}</p>` : ''}
                 </div>
                 
-                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
-                    <p class="text-sm text-yellow-800"><i class="fas fa-info-circle mr-2"></i><strong>Pago contra entrega</strong> - Pagarás en efectivo al recibir el pedido.</p>
+                    <div class="bg-[#F5ECDC] border border-[#7B7369] rounded-xl p-3 mb-4">
+                    <p class="text-sm text-[#4D4845] flex items-center gap-2">
+                        <i class="fas fa-hand-holding-usd text-[#7B7369]"></i> 
+                        <strong>Pago contra entrega</strong> - Pagarás en efectivo al recibir el pedido.
+                    </p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -1107,9 +1110,10 @@ window.confirmarPedidoFinal = function(datosStr) {
             
             const datosCorreo = {
                 nombre: datos.nombre,
-                email: user?.email || 'cliente@email.com',
-                numeroPedido: numeroPedido,  // ← USAR EL MISMO NÚMERO
+                email: userActual?.email || 'cliente@email.com',
+                numeroPedido: numeroPedido,
                 subtotal: subtotal,
+                descuento: descuento,  // ← AGREGAR
                 costoEnvio: costoEnvio,
                 envioGratis: envioGratis,
                 total: total,
@@ -1118,7 +1122,7 @@ window.confirmarPedidoFinal = function(datosStr) {
                 ciudad: datos.ciudad,
                 productos: productosCorreo
             };
-            
+                        
             await enviarCorreoConfirmacion(datosCorreo);
             console.log('✅ Correo enviado a:', datosCorreo.email);
         } catch (errorCorreo) {
