@@ -331,16 +331,30 @@
             productosDiv.innerHTML = productos.map(p => {
                 // Manejar packs con productosIncluidosDetalle
                 if (p.esPack && p.productosIncluidosDetalle && p.productosIncluidosDetalle.length > 0) {
+                    const precioPack = p.precio || p.PRECIO || 0;
                     return `
                         <div class="bg-[#F2EBDC] rounded-lg p-3 mb-2">
-                            <p class="font-semibold text-sm mb-2">📦 ${p.nombre || p.NOMBRE}</p>
-                            <div class="pl-4 space-y-1">
+                            <div class="flex justify-between items-start">
+                                <p class="font-semibold text-sm mb-2">📦 ${p.nombre || p.NOMBRE}</p>
+                                <span class="font-bold text-sm">$${precioPack.toLocaleString()}</span>
+                            </div>
+                            <div class="pl-4 space-y-1 mt-2">
                                 ${p.productosIncluidosDetalle.map(detalle => `
-                                    <div class="text-xs text-[#7B7369]">
-                                        • ${detalle.nombre} - ${detalle.colorNombre} (Talla ${detalle.talla}) x${detalle.cantidad}
+                                    <div class="text-xs text-[#7B7369] flex justify-between">
+                                        <span>• ${detalle.nombre} - ${detalle.colorNombre} (Talla ${detalle.talla})</span>
+                                        <span>x${detalle.cantidad}</span>
                                     </div>
                                 `).join('')}
                             </div>
+                        </div>
+                    `;
+                }
+                // Mostrar descuento si existe
+                if (pedido.descuento && pedido.descuento > 0) {
+                    productosDiv.innerHTML += `
+                        <div class="flex justify-between text-sm text-green-600 mt-2 pt-2 border-t border-[#F2EBDC]">
+                            <span>🎉 Descuento aplicado</span>
+                            <span>-$${pedido.descuento.toLocaleString()}</span>
                         </div>
                     `;
                 }

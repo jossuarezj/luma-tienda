@@ -3,6 +3,34 @@ import { productos } from './products.js';
 import { guardarVentaFirestore } from './firebase-ventas.js';
 import { cargarCuponesFirestore, marcarCuponUsado } from './firebase-cupones.js';
 
+// Función para calcular el subtotal sobre el que aplica el cupón
+    function calcularSubtotalElegible(itemsVisibles, cuponInfo) {
+    if (!cuponInfo) return 0;
+    
+    let itemsFiltrados = [];
+    
+    switch (cuponInfo.aplicaA) {
+        case "individuales":
+            // Solo productos individuales (NO packs)
+            itemsFiltrados = itemsVisibles.filter(item => !item.esPack);
+            break;
+        case "packs":
+            // Solo packs
+            itemsFiltrados = itemsVisibles.filter(item => item.esPack);
+            break;
+        case "producto":
+            // Solo un producto específico
+            itemsFiltrados = itemsVisibles.filter(item => 
+                (item.ID === cuponInfo.productoId || item.id === cuponInfo.productoId) && !item.esPack
+            );
+            break;
+        default:
+            // "todos" o cualquier otro: aplica a todo
+            itemsFiltrados = itemsVisibles;
+    }
+    
+    return itemsFiltrados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+}
 // Función de notificación (igual que en main.js)
 function mostrarMensaje(mensaje, tipo = "success") {
     const notification = document.createElement('div');
@@ -49,20 +77,32 @@ function saveCart() {
 export function updateCartUI() {
     const user = getCurrentUser();
     const itemsVisibles = cart.filter(item => !item.esParteDePack);
+    // Subtotal TOTAL (incluye packs)
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-    
-    // Calcular descuento
+
+        // Subtotal solo de productos individuales (excluyendo packs)
+    const subtotalIndividuales = itemsVisibles
+            .filter(item => !item.esPack)
+            .reduce((s, i) => s + (i.precio * i.cantidad), 0);
+
         // Calcular descuento
-    let descuento = 0;
-    
-    // Verificar si hay productos individuales (NO packs)
-    const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
-    
-    if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        descuento = subtotal * (cuponInfo.valor / 100);
-    } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
-        descuento = subtotal * 0.3;
-    }
+        let descuento = 0;
+
+        // Verificar si hay productos individuales (NO packs)
+        const hayProductosIndividuales = subtotalIndividuales > 0;
+
+        if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
+    // Calcular subtotal elegible según el tipo de cupón
+    const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        if (cuponInfo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponInfo.valor / 100);
+        } else {
+            // Descuento fijo (monto)
+            descuento = Math.min(cuponInfo.valor, subtotalElegible);
+        }
+        } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
+            descuento = subtotal * 0.3;
+        }
     
     // Calcular envío (gratis si subtotal >= umbral)
     envioGratis = subtotal >= UMBRAL_ENVIO_GRATIS;
@@ -253,27 +293,38 @@ export function addPackToCart(packData) {
     
     saveCart();
     mostrarMensaje(`🎉 Pack ${packData.cantidad} bodys agregado`, "success");
-}
+    }
 
-export function getDatosEnvioGuardados() {
-    return JSON.parse(localStorage.getItem('lumaDatosEnvio')) || {};
-}
+    export function getDatosEnvioGuardados() {
+        return JSON.parse(localStorage.getItem('lumaDatosEnvio')) || {};
+    }
 
-export function guardarDatosEnvio(datos) {
-    localStorage.setItem('lumaDatosEnvio', JSON.stringify(datos));
-}
+    export function guardarDatosEnvio(datos) {
+        localStorage.setItem('lumaDatosEnvio', JSON.stringify(datos));
+    }
 
-export function getResumenPedido() {
+    export function getResumenPedido() {
     const user = getCurrentUser();
     const itemsVisibles = cart.filter(item => !item.esParteDePack);
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+
+    // Subtotal solo de productos individuales (excluyendo packs)
+    const subtotalIndividuales = itemsVisibles
+        .filter(item => !item.esPack)
+        .reduce((s, i) => s + (i.precio * i.cantidad), 0);
+
     let descuento = 0;
-    
+
     // Verificar si hay productos individuales (NO packs)
-    const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
-    
+    const hayProductosIndividuales = subtotalIndividuales > 0;
+
     if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        descuento = subtotal * (cuponInfo.valor / 100);
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        if (cuponInfo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponInfo.valor / 100);
+        } else {
+            descuento = Math.min(cuponInfo.valor, subtotalElegible);
+        }
     } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
         descuento = subtotal * 0.3;
     }
@@ -296,16 +347,28 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     console.log("📦 itemsVisibles:", itemsVisibles.length);
     
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-    console.log("💰 Subtotal:", subtotal);
-    
+    console.log("💰 Subtotal total:", subtotal);
+
+    // Subtotal solo de productos individuales (excluyendo packs)
+    const subtotalIndividuales = itemsVisibles
+        .filter(item => !item.esPack)
+        .reduce((s, i) => s + (i.precio * i.cantidad), 0);
+    console.log("💰 Subtotal individuales (con descuento):", subtotalIndividuales);
+
     let descuento = 0;
-    const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
-    
+    const hayProductosIndividuales = subtotalIndividuales > 0;
+
     if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        descuento = subtotal * (cuponInfo.valor / 100);
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        if (cuponInfo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponInfo.valor / 100);
+        } else {
+            descuento = Math.min(cuponInfo.valor, subtotalElegible);
+        }
     } else if (user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
         descuento = subtotal * 0.3;
     }
+
     console.log("🏷️ Descuento:", descuento);
     
     const envioGratisCalc = subtotal >= UMBRAL_ENVIO_GRATIS;
@@ -334,6 +397,7 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     const ventaData = {
         usuario: user.name,
         email: user.email,
+        uid: user.uid,
         productos: itemsParaGuardar,
         subtotal: subtotal,
         descuento: descuento,
@@ -360,8 +424,9 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     }
     
     if (cuponAplicado) {
-    await marcarCuponComoUsado(cuponAplicado, user.email);
+        await marcarCuponComoUsado(cuponAplicado, user.email);
     }
+    
     // Guardar en localStorage como respaldo
     let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
     compras.push({ ...ventaData, idFirestore: ventaId || 'no-firestore' }); 
@@ -470,14 +535,60 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
 
 export async function aplicarCupon(codigo) {
     try {
-        const cupones = await cargarCuponesFirestore();
-        const cupon = cupones.find(c => c.codigo === codigo && c.activo === true && c.usado === false);
-        
-        if (!cupon) {
-            return { success: false, message: "Cupón inválido o ya usado" };
+        const user = getCurrentUser();
+        if (!user) {
+            return { success: false, message: "Debes iniciar sesión" };
         }
         
-        // Guardar cupón aplicado en memoria
+        const cupones = await cargarCuponesFirestore();
+        const cupon = cupones.find(c => c.codigo === codigo && c.activo === true);
+        
+        if (!cupon) {
+            return { success: false, message: "Cupón inválido" };
+        }
+        
+        // Validar fechas
+        const hoy = new Date();
+        const fechaInicio = cupon.fechaInicio?.toDate ? cupon.fechaInicio.toDate() : new Date(cupon.fechaInicio);
+        const fechaFin = cupon.fechaFin?.toDate ? cupon.fechaFin.toDate() : new Date(cupon.fechaFin);
+        
+        if (fechaInicio && hoy < fechaInicio) {
+            return { success: false, message: "Cupón aún no disponible" };
+        }
+        if (fechaFin && hoy > fechaFin) {
+            return { success: false, message: "Cupón expirado" };
+        }
+        
+        // Validar usos por usuario
+        const usosPorUsuario = cupon.usosPorUsuario || [];
+        if (cupon.usosMaximos > 0 && usosPorUsuario.length >= cupon.usosMaximos) {
+            return { success: false, message: "Cupón agotado" };
+        }
+        if (usosPorUsuario.includes(user.email)) {
+            return { success: false, message: "Ya usaste este cupón" };
+        }
+        
+        // Validar a qué aplica el descuento
+        const itemsVisibles = cart.filter(item => !item.esParteDePack);
+        
+        if (cupon.aplicaA === "individuales") {
+            const tieneIndividuales = itemsVisibles.some(item => !item.esPack);
+            if (!tieneIndividuales) {
+                return { success: false, message: "Este cupón solo aplica para productos individuales (no packs)" };
+            }
+        } else if (cupon.aplicaA === "packs") {
+            const tienePacks = itemsVisibles.some(item => item.esPack);
+            if (!tienePacks) {
+                return { success: false, message: "Este cupón solo aplica para packs" };
+            }
+        } else if (cupon.aplicaA === "producto" && cupon.productoId) {
+            const tieneProducto = itemsVisibles.some(item => (item.ID === cupon.productoId || item.id === cupon.productoId) && !item.esPack);
+            if (!tieneProducto) {
+                return { success: false, message: "Este cupón no aplica para los productos seleccionados" };
+            }
+        }
+        
+        // Guardar cupón aplicado
         cuponAplicado = cupon.codigo;
         cuponInfo = cupon;
         localStorage.setItem('cuponAplicado', cupon.codigo);
