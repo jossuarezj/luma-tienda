@@ -471,15 +471,20 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
                         <h3 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-box text-[#7B7369]"></i> Resumen del pedido</h3>
                         <div class="space-y-2">
                             ${productos.map(p => {
-                                const precioFinal = p.precio || p.PRECIO || 0;
+                                // Usar precio con descuento (p.precio) o precio original (p.PRECIO)
+                                const precioUnitario = p.precio || p.PRECIO || 0;
                                 const cantidad = p.cantidad || 1;
+                                const subtotalProducto = precioUnitario * cantidad;
+                                const nombreProducto = p.nombre || p.NOMBRE || 'Producto';
+                                const colorProducto = p.colorNombre || p.COLORNOMBRE || '';
                                 return `
                                     <div class="flex justify-between text-sm">
-                                        <span>${p.nombre || p.NOMBRE} ${p.colorNombre || p.COLORNOMBRE || ''} x${cantidad}</span>
-                                        <span class="font-medium">$${(precioFinal * cantidad).toLocaleString()}</span>
+                                        <span>${nombreProducto} ${colorProducto} x${cantidad}</span>
+                                        <span class="font-medium">$${subtotalProducto.toLocaleString()}</span>
                                     </div>
                                 `;
                             }).join('')}
+                        </div>
                     </div>
                     
                     <div class="bg-[#F2EBDC] p-4 rounded-xl mb-4">
@@ -513,12 +518,11 @@ function mostrarModalConfirmacion(user, productos, subtotal, descuento, envio, t
                         ${datos.infoAdicional ? `<p class="text-sm text-gray-500 mt-1">Referencia: ${datos.infoAdicional}</p>` : ''}
                     </div>
                     
-                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
-                        <p class="text-sm text-green-800 flex items-center gap-2">
-                            <i class="fas fa-truck"></i> 
-                            <strong>Pago contra entrega</strong> - Total a pagar en efectivo al recibir: <strong>$${total.toLocaleString()}</strong>
+                    <div class="bg-[#F5ECDC] border border-[#7B7369] rounded-xl p-3 mb-4">
+                        <p class="text-sm text-[#4D4845] flex items-center gap-2">
+                            <i class="fas fa-hand-holding-usd text-[#7B7369]"></i> 
+                            <strong>Pago contra entrega</strong> - Pagarás en efectivo al recibir el pedido.
                         </p>
-                        <p class="text-xs text-green-600 mt-2">📞 Te contactaremos para coordinar la entrega.</p>
                     </div>
                     
                     <button onclick="window.cerrarModalConfirmacion()" class="btn-primary w-full py-3 text-sm font-semibold">Cerrar</button>
