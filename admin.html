@@ -657,13 +657,23 @@
         contenedor.innerHTML = html;
         // Calcular y mostrar total acumulado
         let totalAcumulado = 0;
-        for (const p of productosFacturaTemp) {
-            totalAcumulado += p.cantidad * p.precio;
-        }
-        const totalSpan = document.getElementById('totalAcumuladoFactura');
-        if (totalSpan) {
-            totalSpan.innerText = `$${totalAcumulado.toLocaleString()}`;
-        }
+            for (const p of productosFacturaTemp) {
+                totalAcumulado += p.cantidad * p.precio;
+            }
+            const totalSpan = document.getElementById('totalAcumuladoFactura');
+            if (totalSpan) {
+                totalSpan.innerText = `$${totalAcumulado.toLocaleString()}`;
+            } else {
+                // Si no existe el span, crear uno
+                const contenedor = document.getElementById('listaProductosFactura');
+                if (contenedor && !document.getElementById('totalAcumuladoFactura')) {
+                    const totalDiv = document.createElement('div');
+                    totalDiv.id = 'totalAcumuladoFactura';
+                    totalDiv.className = 'text-right font-bold text-lg mt-3 pt-2 border-t';
+                    totalDiv.innerText = `Total: $${totalAcumulado.toLocaleString()}`;
+                    contenedor.parentNode.appendChild(totalDiv);
+                }
+            }
     };
     
     window.eliminarProductoFactura = function(index) {
