@@ -126,412 +126,283 @@
         })();
     </script>
 
-    <script type="module">
-        import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './js/firebase-config.js';
-        import { cargarVentasFirestore, actualizarVentaFirestore, eliminarVentaFirestore } from './js/firebase-ventas.js';
-        import { cargarCuponesFirestore, guardarCuponFirestore, eliminarCuponFirestore } from './js/firebase-cupones.js';
+        <script type="module">
+    import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './js/firebase-config.js';
+    import { cargarVentasFirestore, actualizarVentaFirestore, eliminarVentaFirestore } from './js/firebase-ventas.js';
+    import { cargarCuponesFirestore, guardarCuponFirestore, eliminarCuponFirestore } from './js/firebase-cupones.js';
+    
+    const ADMIN_EMAIL = "info@lumacolombia.com";
+    let ventasCache = [];
+    
+    window.loginAdmin = async function() {
+        const email = document.getElementById('adminEmail').value;
+        const password = document.getElementById('adminPassword').value;
+        const errorDiv = document.getElementById('loginError');
         
-        const ADMIN_EMAIL = "info@lumacolombia.com";
-        let ventasCache = [];
+        if (!email || !password) {
+            errorDiv.innerText = 'Completa todos los campos';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
         
-        window.loginAdmin = async function() {
-            const email = document.getElementById('adminEmail').value;
-            const password = document.getElementById('adminPassword').value;
-            const errorDiv = document.getElementById('loginError');
-            
-            if (!email || !password) {
-                errorDiv.innerText = 'Completa todos los campos';
-                errorDiv.classList.remove('hidden');
-                return;
+        if (email !== ADMIN_EMAIL) {
+            errorDiv.innerText = 'No tienes permisos de administrador';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            errorDiv.classList.add('hidden');
+        } catch (error) {
+            errorDiv.innerText = 'Correo o contraseña incorrectos';
+            errorDiv.classList.remove('hidden');
+        }
+    };
+    
+    window.logoutAdmin = async function() {
+        await signOut(auth);
+    };
+    
+    onAuthStateChanged(auth, (user) => {
+        if (user && user.email === ADMIN_EMAIL) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            cargarDatos();
+        } else {
+            if (user) {
+                signOut(auth);
             }
-            
-            if (email !== ADMIN_EMAIL) {
-                errorDiv.innerText = 'No tienes permisos de administrador';
-                errorDiv.classList.remove('hidden');
-                return;
-            }
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                errorDiv.classList.add('hidden');
-            } catch (error) {
-                errorDiv.innerText = 'Correo o contraseña incorrectos';
-                errorDiv.classList.remove('hidden');
-            }
-        };
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPassword').value = '';
+        }
+    });
+    
+    async function cargarDatos() {
+        cargarClientes();
+        await cargarVentas();
+        await cargarCupones();
+    }
+    
+    function cargarClientes() {
+        const clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
+        document.getElementById('totalClientes').innerText = clientes.length;
         
-        window.logoutAdmin = async function() {
-            await signOut(auth);
-        };
-        
-        onAuthStateChanged(auth, (user) => {
-            if (user && user.email === ADMIN_EMAIL) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'block';
-                cargarDatos();
-            } else {
-                if (user) {
-                    signOut(auth);
-                }
-                document.getElementById('loginScreen').style.display = 'block';
-                document.getElementById('adminPanel').style.display = 'none';
-                document.getElementById('adminEmail').value = '';
-                document.getElementById('adminPassword').value = '';
-            }
-        });
-        
-        async function cargarDatos() {
+        const clientesHtml = `<table class="w-full text-sm">
+            <thead class="bg-gray-100"><tr><th class="p-2 text-left">Nombre</th><th class="p-2 text-left">Email</th><th class="p-2 text-left">Fecha Registro</th><th class="p-2 text-left">Acciones</th></tr></thead>
+            <tbody>${clientes.map((c, idx) => `<tr><td class="p-2">${c.name}</td><td class="p-2">${c.email}</td><td class="p-2">${new Date(c.fechaRegistro).toLocaleDateString()}</td><td class="p-2"><button onclick="eliminarCliente(${idx})" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('')}</tbody>
+        </table>`;
+        document.getElementById('listaClientes').innerHTML = clientes.length ? clientesHtml : '<p class="text-gray-500">No hay clientes registrados</p>';
+    }
+    
+    window.eliminarCliente = function(index) {
+        if (confirm('¿Eliminar este cliente?')) {
+            let clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
+            clientes.splice(index, 1);
+            localStorage.setItem('lumaClientes', JSON.stringify(clientes));
             cargarClientes();
+        }
+    };
+    
+    async function cargarVentas() {
+        try {
+            ventasCache = await cargarVentasFirestore();
+            console.log("Ventas cargadas:", ventasCache.length);
+            
+            const totalVentas = ventasCache.length;
+            const entregados = ventasCache.filter(v => v.estadoEnvio === 'entregado').length;
+            const ingresos = ventasCache.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + (v.total || 0), 0);
+            
+            document.getElementById('totalVentas').innerText = totalVentas;
+            document.getElementById('totalEntregados').innerText = entregados;
+            document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
+            
+            if (ventasCache.length === 0) {
+                document.getElementById('listaVentas').innerHTML = '<p class="text-gray-500">No hay ventas registradas</p>';
+                return;
+            }
+            
+            let ventasHtml = `<table class="w-full text-sm"><thead class="bg-gray-100"><tr><th class="p-2 text-left">N° Pedido</th><th class="p-2 text-left">Cliente</th><th class="p-2 text-left">Fecha</th><th class="p-2 text-left">Método</th><th class="p-2 text-left">Total</th><th class="p-2 text-left">Estado pago</th><th class="p-2 text-left">Estado envío</th><th class="p-2 text-left">Guía</th><th class="p-2 text-left">Transportadora</th><th class="p-2 text-left">Acciones</th></tr></thead><tbody>`;
+            
+            for (let i = 0; i < ventasCache.length; i++) {
+                const v = ventasCache[i];
+                ventasHtml += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
+                        <td class="p-2">${v.usuario || v.email}${v.ciudad ? `<br><span class="text-xs text-gray-400">${v.ciudad}</span>` : ''}</td>
+                        <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
+                        <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)'}</td>
+                        <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
+                        <td class="p-2">
+                            <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoPago('${v.id}', this.value)">
+                                <option value="Pendiente" ${v.estado === 'Pendiente' ? 'selected' : ''}>📦 Pendiente</option>
+                                <option value="Pagado" ${v.estado === 'Pagado' ? 'selected' : ''}>✅ Pagado</option>
+                                <option value="Devuelto" ${v.estado === 'Devuelto' ? 'selected' : ''}>❌ Devuelto</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoEnvio('${v.id}', this.value)">
+                                <option value="confirmado" ${v.estadoEnvio === 'confirmado' ? 'selected' : ''}>✅ Confirmado</option>
+                                <option value="preparando" ${v.estadoEnvio === 'preparando' ? 'selected' : ''}>📦 Preparando</option>
+                                <option value="enviado" ${v.estadoEnvio === 'enviado' ? 'selected' : ''}>🚚 En camino</option>
+                                <option value="entregado" ${v.estadoEnvio === 'entregado' ? 'selected' : ''}>🏠 Entregado</option>
+                            </select>
+                        </td>
+                        <td class="p-2"><input type="text" id="guia_${i}" value="${v.numeroGuia || ''}" placeholder="N° guía" class="guia-input" onblur="actualizarGuia('${v.id}', this.value)"></td>
+                        <td class="p-2">
+                            <select id="transportadora_${i}" class="transportadora-select" onchange="actualizarTransportadora('${v.id}', this.value)">
+                                <option value="">Seleccionar</option>
+                                <option value="Interrapidísimo" ${v.transportadora === 'Interrapidísimo' ? 'selected' : ''}>Interrapidísimo</option>
+                                <option value="Servientrega" ${v.transportadora === 'Servientrega' ? 'selected' : ''}>Servientrega</option>
+                                <option value="Envíos Nacionales" ${v.transportadora === 'Envíos Nacionales' ? 'selected' : ''}>Envíos Nacionales</option>
+                                <option value="Coordinadora" ${v.transportadora === 'Coordinadora' ? 'selected' : ''}>Coordinadora</option>
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <div class="flex gap-2">
+                                <button onclick="toggleDetalles(${i})" class="text-blue-600 text-sm hover:text-blue-800" title="Ver detalles"><i class="fas fa-chevron-down" id="flecha_${i}"></i></button>
+                                <button onclick="eliminarVenta('${v.id}')" class="text-red-500 text-sm hover:text-red-700" title="Eliminar venta"><i class="fas fa-trash-alt"></i></button>
+                                <button onclick="enviarGuiaPorWhatsApp('${v.telefono || v.datosEnvio?.telefono || ''}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}', '${v.usuario || 'Cliente'}')" class="text-green-600 text-sm hover:text-green-800" ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}><i class="fab fa-whatsapp"></i></button>
+                                <button onclick="enviarCorreoGuiaManual('${v.id}', '${v.email}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}')" class="text-blue-600 text-sm hover:text-blue-800" ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}><i class="fas fa-envelope"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="detalles_${i}" class="hidden bg-gray-50">
+                        <td colspan="10" class="p-4">
+                            <div class="border rounded-lg p-4 bg-white">
+                                <h4 class="font-bold mb-2">📋 Detalles del pedido</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-100"><tr><th class="p-2 text-left">Producto</th><th class="p-2 text-left">Color</th><th class="p-2 text-left">Talla</th><th class="p-2 text-left">Cantidad</th><th class="p-2 text-left">Precio unitario</th></tr></thead>
+                                        <tbody>${(v.productos || []).map(prod => `<tr class="border-b"><td class="p-2">${prod.nombre || prod.NOMBRE}</td><td class="p-2">${prod.colorNombre || prod.COLORNOMBRE || prod.color}</td><td class="p-2">${prod.talla || 'N/A'}</td><td class="p-2">${prod.cantidad}</td><td class="p-2">$${(prod.precio || prod.PRECIO || 0).toLocaleString()}</td></tr>`).join('')}</tbody>
+                                    </table>
+                                </div>
+                                ${v.datosEnvio ? `<div class="mt-4 p-3 bg-gray-50 rounded-lg"><p class="font-semibold text-sm mb-1">📍 Dirección de envío:</p><p class="text-sm">${v.datosEnvio.direccion}, ${v.datosEnvio.ciudad} - ${v.datosEnvio.tipoVivienda || 'Casa'}</p><p class="text-sm mt-1">📞 Teléfono: ${v.datosEnvio.telefono}</p></div>` : ''}
+                                ${v.descuento > 0 ? `<div class="mt-3 p-3 bg-green-50 rounded-lg"><p class="font-semibold text-sm text-green-700">🎉 Descuento aplicado: -$${v.descuento.toLocaleString()}</p></div>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            ventasHtml += `</tbody></table>`;
+            document.getElementById('listaVentas').innerHTML = ventasHtml;
+        } catch (error) {
+            console.error("Error cargando ventas:", error);
+            document.getElementById('listaVentas').innerHTML = '<p class="text-red-500">Error al cargar ventas</p>';
+        }
+    }
+    
+    window.toggleDetalles = function(index) {
+        const detallesRow = document.getElementById(`detalles_${index}`);
+        const flecha = document.getElementById(`flecha_${index}`);
+        if (detallesRow.classList.contains('hidden')) {
+            detallesRow.classList.remove('hidden');
+            flecha.classList.remove('fa-chevron-down');
+            flecha.classList.add('fa-chevron-up');
+        } else {
+            detallesRow.classList.add('hidden');
+            flecha.classList.remove('fa-chevron-up');
+            flecha.classList.add('fa-chevron-down');
+        }
+    };
+    
+    window.cambiarEstadoPago = async function(id, nuevoEstado) {
+        await actualizarVentaFirestore(id, { estado: nuevoEstado });
+        await cargarVentas();
+    };
+    
+    window.cambiarEstadoEnvio = async function(id, nuevoEstado) {
+        await actualizarVentaFirestore(id, { estadoEnvio: nuevoEstado });
+        await cargarVentas();
+    };
+    
+    window.actualizarGuia = async function(id, numeroGuia) {
+        await actualizarVentaFirestore(id, { numeroGuia: numeroGuia });
+        await cargarVentas();
+    };
+    
+    window.actualizarTransportadora = async function(id, transportadora) {
+        await actualizarVentaFirestore(id, { transportadora: transportadora });
+        await cargarVentas();
+    };
+    
+    window.eliminarVenta = async function(id) {
+        if (confirm('¿Eliminar esta venta?')) {
+            await eliminarVentaFirestore(id);
             await cargarVentas();
+        }
+    };
+    
+    window.enviarGuiaPorWhatsApp = function(telefono, numeroPedido, numeroGuia, transportadora, nombreCliente) {
+        if (!telefono) { alert('❌ No hay número de teléfono registrado'); return; }
+        if (!numeroGuia) { alert('❌ Primero registra el número de guía'); return; }
+        let telefonoLimpio = telefono.toString().replace(/[^0-9]/g, '');
+        if (telefonoLimpio.length === 10) telefonoLimpio = '57' + telefonoLimpio;
+        let linkRastreo = '#';
+        if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+        else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+        else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+        else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
+        const primerNombre = nombreCliente ? nombreCliente.split(' ')[0] : 'Cliente';
+        const mensaje = `*L U M A*\n\n¡Hola ${primerNombre}! Tu pedido *${numeroPedido}* ya está en camino.\n\n*GUÍA:* ${numeroGuia}\n*TRANSPORTADORA:* ${transportadora}\n\n*RASTREA AQUÍ:*\n${linkRastreo}\n\n*O VISITA:*\nhttps://jossuarezj.github.io/luma-tienda/seguimiento.html?pedido=${numeroPedido}`;
+        window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    };
+    
+    window.enviarCorreoGuiaManual = async function(id, email, numeroPedido, numeroGuia, transportadora) {
+        if (!numeroGuia) { alert('❌ Primero registra el número de guía'); return; }
+        if (!transportadora) { alert('❌ Primero selecciona la transportadora'); return; }
+        let linkRastreo = '#';
+        if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+        else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+        else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+        else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
+        try {
+            await emailjs.send('service_nfns0rk', 'template_lykb5bb', { email_cliente: email, numeroPedido: numeroPedido, numeroGuia: numeroGuia, transportadora: transportadora, linkRastreo: linkRastreo });
+            alert('✅ Correo enviado exitosamente');
+        } catch (error) { console.error('Error:', error); alert('❌ Error al enviar correo'); }
+    };
+    
+    // ==================== CUPONES CON FIRESTORE ====================
+    
+    async function cargarCupones() {
+        try {
+            const cupones = await cargarCuponesFirestore();
+            if (cupones.length === 0) { document.getElementById('listaCupones').innerHTML = '<p class="text-gray-500">No hay cupones</p>'; return; }
+            const cuponesHtml = cupones.map(cupon => `<div class="cupon"><div><span class="font-bold">${cupon.codigo}</span> - ${cupon.valor}% OFF (${cupon.aplicaA || 'todos'})</div><button onclick="eliminarCupon('${cupon.id}')" class="text-red-500"><i class="fas fa-trash"></i></button></div>`).join('');
+            document.getElementById('listaCupones').innerHTML = cuponesHtml;
+        } catch (error) { console.error("Error cargando cupones:", error); document.getElementById('listaCupones').innerHTML = '<p class="text-red-500">Error al cargar cupones</p>'; }
+    }
+    
+    window.crearCupon = async function() {
+        const codigo = document.getElementById('codigoCupon').value.toUpperCase();
+        const valor = parseInt(document.getElementById('valorCupon').value);
+        const aplicaA = document.getElementById('aplicaACupon').value;
+        if (!codigo || !valor) { alert("Completa todos los campos"); return; }
+        try {
+            const nuevoCupon = { codigo: codigo, valor: valor, tipo: "porcentaje", aplicaA: aplicaA, activo: true, usosMaximos: 1, usosPorUsuario: [], fechaInicio: new Date("2026-01-01"), fechaFin: new Date("2026-12-31") };
+            await guardarCuponFirestore(nuevoCupon);
+            document.getElementById('codigoCupon').value = '';
+            document.getElementById('valorCupon').value = '';
+            document.getElementById('aplicaACupon').value = 'individuales';
             await cargarCupones();
+            alert(`✅ Cupón ${codigo} creado correctamente`);
+        } catch (error) { console.error("Error creando cupón:", error); alert("❌ Error al crear cupón"); }
+    };
+    
+    window.eliminarCupon = async function(id) {
+        if (confirm('¿Eliminar este cupón?')) {
+            try { await eliminarCuponFirestore(id); await cargarCupones(); alert("✅ Cupón eliminado"); } 
+            catch (error) { console.error("Error eliminando cupón:", error); alert("❌ Error al eliminar cupón"); }
         }
-        
-        function cargarClientes() {
-            const clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
-            document.getElementById('totalClientes').innerText = clientes.length;
-            
-            const clientesHtml = `<table class="w-full text-sm">
-                <thead class="bg-gray-100">
-                    <tr><th class="p-2 text-left">Nombre</th><th class="p-2 text-left">Email</th><th class="p-2 text-left">Fecha Registro</th><th class="p-2 text-left">Acciones</th></tr>
-                </thead>
-                <tbody>${clientes.map((c, idx) => `<tr><td class="p-2">${c.name}</td><td class="p-2">${c.email}</td><td class="p-2">${new Date(c.fechaRegistro).toLocaleDateString()}</td><td class="p-2"><button onclick="eliminarCliente(${idx})" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('')}</tbody>
-            </table>`;
-            document.getElementById('listaClientes').innerHTML = clientes.length ? clientesHtml : '<p class="text-gray-500">No hay clientes registrados</p>';
-        }
-        
-        window.eliminarCliente = function(index) {
-            if (confirm('¿Eliminar este cliente?')) {
-                let clientes = JSON.parse(localStorage.getItem('lumaClientes')) || [];
-                clientes.splice(index, 1);
-                localStorage.setItem('lumaClientes', JSON.stringify(clientes));
-                cargarClientes();
-            }
-        };
-        
-        async function cargarVentas() {
-            try {
-                ventasCache = await cargarVentasFirestore();
-                console.log("Ventas cargadas:", ventasCache.length);
-                
-                const totalVentas = ventasCache.length;
-                const entregados = ventasCache.filter(v => v.estadoEnvio === 'entregado').length;
-                const ingresos = ventasCache.filter(v => v.estadoEnvio === 'entregado').reduce((sum, v) => sum + (v.total || 0), 0);
-                
-                document.getElementById('totalVentas').innerText = totalVentas;
-                document.getElementById('totalEntregados').innerText = entregados;
-                document.getElementById('totalIngresos').innerText = `$${ingresos.toLocaleString()}`;
-                
-                if (ventasCache.length === 0) {
-                    document.getElementById('listaVentas').innerHTML = '<p class="text-gray-500">No hay ventas registradas</p>';
-                    return;
-                }
-                
-                let ventasHtml = `<table class="w-full text-sm">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-2 text-left">N° Pedido</th>
-                            <th class="p-2 text-left">Cliente</th>
-                            <th class="p-2 text-left">Fecha</th>
-                            <th class="p-2 text-left">Método</th>
-                            <th class="p-2 text-left">Total</th>
-                            <th class="p-2 text-left">Estado pago</th>
-                            <th class="p-2 text-left">Estado envío</th>
-                            <th class="p-2 text-left">Guía</th>
-                            <th class="p-2 text-left">Transportadora</th>
-                            <th class="p-2 text-left">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-                
-                for (let i = 0; i < ventasCache.length; i++) {
-                    const v = ventasCache[i];
-                    ventasHtml += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
-                            <td class="p-2">${v.usuario || v.email}${v.ciudad ? `<br><span class="text-xs text-gray-400">${v.ciudad}</span>` : ''}</td>
-                            <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
-                            <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)'}</td>
-                            <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
-                            <td class="p-2">
-                                <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoPago('${v.id}', this.value)">
-                                    <option value="Pendiente" ${v.estado === 'Pendiente' ? 'selected' : ''}>📦 Pendiente</option>
-                                    <option value="Pagado" ${v.estado === 'Pagado' ? 'selected' : ''}>✅ Pagado</option>
-                                    <option value="Devuelto" ${v.estado === 'Devuelto' ? 'selected' : ''}>❌ Devuelto</option>
-                                </select>
-                            </td>
-                            <td class="p-2">
-                                <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoEnvio('${v.id}', this.value)">
-                                    <option value="confirmado" ${v.estadoEnvio === 'confirmado' ? 'selected' : ''}>✅ Confirmado</option>
-                                    <option value="preparando" ${v.estadoEnvio === 'preparando' ? 'selected' : ''}>📦 Preparando</option>
-                                    <option value="enviado" ${v.estadoEnvio === 'enviado' ? 'selected' : ''}>🚚 En camino</option>
-                                    <option value="entregado" ${v.estadoEnvio === 'entregado' ? 'selected' : ''}>🏠 Entregado</option>
-                                </select>
-                            </td>
-                            <td class="p-2">
-                                <input type="text" id="guia_${i}" value="${v.numeroGuia || ''}" placeholder="N° guía" class="guia-input" onblur="actualizarGuia('${v.id}', this.value)">
-                            </td>
-                            <td class="p-2">
-                                <select id="transportadora_${i}" class="transportadora-select" onchange="actualizarTransportadora('${v.id}', this.value)">
-                                    <option value="">Seleccionar</option>
-                                    <option value="Interrapidísimo" ${v.transportadora === 'Interrapidísimo' ? 'selected' : ''}>Interrapidísimo</option>
-                                    <option value="Servientrega" ${v.transportadora === 'Servientrega' ? 'selected' : ''}>Servientrega</option>
-                                    <option value="Envíos Nacionales" ${v.transportadora === 'Envíos Nacionales' ? 'selected' : ''}>Envíos Nacionales</option>
-                                    <option value="Coordinadora" ${v.transportadora === 'Coordinadora' ? 'selected' : ''}>Coordinadora</option>
-                                </select>
-                            </td>
-                            <td class="p-2">
-                                <div class="flex gap-2">
-                                    <button onclick="toggleDetalles(${i})" class="text-blue-600 text-sm hover:text-blue-800" title="Ver detalles">
-                                        <i class="fas fa-chevron-down" id="flecha_${i}"></i>
-                                    </button>
-                                    <button onclick="eliminarVenta('${v.id}')" class="text-red-500 text-sm hover:text-red-700" title="Eliminar venta">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                    <button onclick="enviarGuiaPorWhatsApp('${v.telefono || v.datosEnvio?.telefono || ''}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}', '${v.usuario || 'Cliente'}')" 
-                                        class="text-green-600 text-sm hover:text-green-800" title="Enviar guía por WhatsApp"
-                                        ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
-                                        <i class="fab fa-whatsapp"></i>
-                                    </button>
-                                    <button onclick="enviarCorreoGuiaManual('${v.id}', '${v.email}', '${v.numeroPedido || v.id}', '${v.numeroGuia || ''}', '${v.transportadora || ''}')" 
-                                        class="text-blue-600 text-sm hover:text-blue-800" title="Enviar correo con guía"
-                                        ${!v.numeroGuia ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>
-                                        <i class="fas fa-envelope"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr id="detalles_${i}" class="hidden bg-gray-50">
-                            <td colspan="10" class="p-4">
-                                <div class="border rounded-lg p-4 bg-white">
-                                    <h4 class="font-bold mb-2">📋 Detalles del pedido</h4>
-                                    <div class="overflow-x-auto">
-                                        <table class="w-full text-sm">
-                                            <thead class="bg-gray-100">
-                                                <tr>
-                                                    <th class="p-2 text-left">Producto</th>
-                                                    <th class="p-2 text-left">Color</th>
-                                                    <th class="p-2 text-left">Talla</th>
-                                                    <th class="p-2 text-left">Cantidad</th>
-                                                    <th class="p-2 text-left">Precio unitario</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${(v.productos || []).map(prod => `
-                                                    <tr class="border-b">
-                                                        <td class="p-2">${prod.nombre || prod.NOMBRE}</td>
-                                                        <td class="p-2">${prod.colorNombre || prod.COLORNOMBRE || prod.color}</td>
-                                                        <td class="p-2">${prod.talla || 'N/A'}</td>
-                                                        <td class="p-2">${prod.cantidad}</td>
-                                                        <td class="p-2">$${(prod.precio || prod.PRECIO || 0).toLocaleString()}</td>
-                                                    </tr>
-                                                `).join('')}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    ${v.datosEnvio ? `
-                                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                                        <p class="font-semibold text-sm mb-1">📍 Dirección de envío:</p>
-                                        <p class="text-sm">${v.datosEnvio.direccion}, ${v.datosEnvio.ciudad} - ${v.datosEnvio.tipoVivienda || 'Casa'}</p>
-                                        <p class="text-sm mt-1">📞 Teléfono: ${v.datosEnvio.telefono}</p>
-                                    </div>
-                                    ` : ''}
-                                    ${v.descuento > 0 ? `
-                                    <div class="mt-3 p-3 bg-green-50 rounded-lg">
-                                        <p class="font-semibold text-sm text-green-700">🎉 Descuento aplicado: -$${v.descuento.toLocaleString()}</p>
-                                    </div>
-                                    ` : ''}
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }
-                
-                ventasHtml += `</tbody></table>`;
-                document.getElementById('listaVentas').innerHTML = ventasHtml;
-            } catch (error) {
-                console.error("Error cargando ventas:", error);
-                document.getElementById('listaVentas').innerHTML = '<p class="text-red-500">Error al cargar ventas</p>';
-            }
-        }
-        
-        window.toggleDetalles = function(index) {
-            const detallesRow = document.getElementById(`detalles_${index}`);
-            const flecha = document.getElementById(`flecha_${index}`);
-            
-            if (detallesRow.classList.contains('hidden')) {
-                detallesRow.classList.remove('hidden');
-                flecha.classList.remove('fa-chevron-down');
-                flecha.classList.add('fa-chevron-up');
-            } else {
-                detallesRow.classList.add('hidden');
-                flecha.classList.remove('fa-chevron-up');
-                flecha.classList.add('fa-chevron-down');
-            }
-        };
-        
-        window.cambiarEstadoPago = async function(id, nuevoEstado) {
-            await actualizarVentaFirestore(id, { estado: nuevoEstado });
-            await cargarVentas();
-        };
-        
-        window.cambiarEstadoEnvio = async function(id, nuevoEstado) {
-            await actualizarVentaFirestore(id, { estadoEnvio: nuevoEstado });
-            await cargarVentas();
-        };
-        
-        window.actualizarGuia = async function(id, numeroGuia) {
-            await actualizarVentaFirestore(id, { numeroGuia: numeroGuia });
-            await cargarVentas();
-        };
-        
-        window.actualizarTransportadora = async function(id, transportadora) {
-            await actualizarVentaFirestore(id, { transportadora: transportadora });
-            await cargarVentas();
-        };
-        
-        window.eliminarVenta = async function(id) {
-            if (confirm('¿Eliminar esta venta?')) {
-                await eliminarVentaFirestore(id);
-                await cargarVentas();
-            }
-        };
-        
-        window.enviarGuiaPorWhatsApp = function(telefono, numeroPedido, numeroGuia, transportadora, nombreCliente) {
-            if (!telefono) {
-                alert('❌ No hay número de teléfono registrado');
-                return;
-            }
-            if (!numeroGuia) {
-                alert('❌ Primero registra el número de guía');
-                return;
-            }
-            
-            let telefonoLimpio = telefono.toString().replace(/[^0-9]/g, '');
-            if (telefonoLimpio.length === 10) telefonoLimpio = '57' + telefonoLimpio;
-            
-            let linkRastreo = '#';
-            if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
-            else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
-            else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
-            else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
-            
-            const primerNombre = nombreCliente ? nombreCliente.split(' ')[0] : 'Cliente';
-            const mensaje = `*L U M A*\n\n¡Hola ${primerNombre}! Tu pedido *${numeroPedido}* ya está en camino.\n\n*GUÍA:* ${numeroGuia}\n*TRANSPORTADORA:* ${transportadora}\n\n*RASTREA AQUÍ:*\n${linkRastreo}\n\n*O VISITA:*\nhttps://jossuarezj.github.io/luma-tienda/seguimiento.html?pedido=${numeroPedido}`;
-            
-            window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
-        };
-        
-        window.enviarCorreoGuiaManual = async function(id, email, numeroPedido, numeroGuia, transportadora) {
-            if (!numeroGuia) {
-                alert('❌ Primero registra el número de guía');
-                return;
-            }
-            if (!transportadora) {
-                alert('❌ Primero selecciona la transportadora');
-                return;
-            }
-            
-            let linkRastreo = '#';
-            if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
-            else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
-            else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
-            else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
-            
-            try {
-                await emailjs.send('service_nfns0rk', 'template_lykb5bb', {
-                    email_cliente: email,
-                    numeroPedido: numeroPedido,
-                    numeroGuia: numeroGuia,
-                    transportadora: transportadora,
-                    linkRastreo: linkRastreo
-                });
-                alert('✅ Correo enviado exitosamente');
-            } catch (error) {
-                console.error('Error:', error);
-                alert('❌ Error al enviar correo');
-            }
-        };
-        
-        // ==================== CUPONES CON FIRESTORE ====================
-        
-        async function cargarCupones() {
-            try {
-                const cupones = await cargarCuponesFirestore();
-                
-                if (cupones.length === 0) {
-                    document.getElementById('listaCupones').innerHTML = '<p class="text-gray-500">No hay cupones</p>';
-                    return;
-                }
-                
-                const cuponesHtml = cupones.map(cupon => `
-                    <div class="cupon">
-                        <div><span class="font-bold">${cupon.codigo}</span> - ${cupon.valor}% OFF (${cupon.aplicaA || 'todos'})</div>
-                        <button onclick="eliminarCupon('${cupon.id}')" class="text-red-500"><i class="fas fa-trash"></i></button>
-                    </div>
-                `).join('');
-                document.getElementById('listaCupones').innerHTML = cuponesHtml;
-            } catch (error) {
-                console.error("Error cargando cupones:", error);
-                document.getElementById('listaCupones').innerHTML = '<p class="text-red-500">Error al cargar cupones</p>';
-            }
-        }
-        
-        window.crearCupon = async function() {
-            const codigo = document.getElementById('codigoCupon').value.toUpperCase();
-            const valor = parseInt(document.getElementById('valorCupon').value);
-            const aplicaA = document.getElementById('aplicaACupon').value;
-            
-            if (!codigo || !valor) { 
-                alert("Completa todos los campos"); 
-                return; 
-            }
-            
-            try {
-                const nuevoCupon = {
-                    codigo: codigo,
-                    valor: valor,
-                    tipo: "porcentaje",
-                    aplicaA: aplicaA,
-                    activo: true,
-                    usosMaximos: 1,
-                    usosPorUsuario: [],
-                    fechaInicio: new Date("2026-01-01"),
-                    fechaFin: new Date("2026-12-31")
-                };
-                
-                await guardarCuponFirestore(nuevoCupon);
-                
-                document.getElementById('codigoCupon').value = '';
-                document.getElementById('valorCupon').value = '';
-                document.getElementById('aplicaACupon').value = 'individuales';
-                
-                await cargarCupones();
-                alert(`✅ Cupón ${codigo} creado correctamente`);
-            } catch (error) {
-                console.error("Error creando cupón:", error);
-                alert("❌ Error al crear cupón");
-            }
-        };
-        
-        window.eliminarCupon = async function(id) {
-            if (confirm('¿Eliminar este cupón?')) {
-                try {
-                    await eliminarCuponFirestore(id);
-                    await cargarCupones();
-                    alert("✅ Cupón eliminado");
-                } catch (error) {
-                    console.error("Error eliminando cupón:", error);
-                    alert("❌ Error al eliminar cupón");
-                }
-            }
-        };
-        
-        window.cargarDatos = cargarDatos;
-        // ==================== FACTURACIÓN ====================
-
+    };
+    
     window.cargarDatos = cargarDatos;
     
     // ==================== FACTURACIÓN ====================
+    
+    let productosFacturaTemp = [];
     
     window.abrirModalFactura = function() {
         document.getElementById('modalFactura').classList.remove('hidden');
@@ -543,256 +414,164 @@
         document.getElementById('modalFactura').classList.remove('flex');
     };
     
-    window.descargarPlantillaExcel = function() {
-    // Usar punto y coma como separador (Excel lo detecta automáticamente)
-    const separador = ";";
-    
-    const encabezados = [
-        "FECHA",
-        "NOMBRE_RAZON_SOCIAL",
-        "NIT_CEDULA",
-        "CORREO",
-        "DIRECCION",
-        "TELEFONO",
-        "CATEGORIA",
-        "REFERENCIA",
-        "TALLA",
-        "COLOR",
-        "CANTIDAD",
-        "PRECIO_UNITARIO"
-    ];
-    
-    // Filas de ejemplo
-    const filas = [
-        encabezados,
-        [
-            new Date().toLocaleDateString(),
-            "María López",
-            "1234567890",
-            "maria@ejemplo.com",
-            "Calle 123",
-            "3001234567",
-            "BODY",
-            "SERENA",
-            "S/M",
-            "NEGRO",
-            "2",
-            "49990"
-        ],
-        [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "BODY",
-            "ALMA",
-            "L/XL",
-            "MARFIL",
-            "1",
-            "49990"
-        ],
-        [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "BODY",
-            "SERENA",
-            "S/M",
-            "BEIGE",
-            "3",
-            "44990"
-        ]
-    ];
-    
-    let contenido = "";
-    for (const fila of filas) {
-        contenido += fila.join(separador) + "\n";
-    }
-    
-    const blob = new Blob(["\uFEFF" + contenido], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.setAttribute("download", "plantilla_factura.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    alert("✅ Plantilla descargada. Ábrela con Excel (se verá como tabla normal). Completa los datos y guárdala como CSV.");
-};
-    
-    window.cargarExcelDatos = function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv, .xls, .xlsx';
-    
-    input.onchange = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const contenido = e.target.result;
-            const lineas = contenido.split('\n');
-            
-            // Detectar separador (punto y coma o coma)
-            let separador = ",";
-            if (lineas[0] && lineas[0].includes(";")) {
-                separador = ";";
-            }
-            
-            const encabezados = lineas[0].split(separador).map(h => h.replace(/"/g, '').trim());
-            
-            // Mapear índices
-            const idxNombre = encabezados.findIndex(h => h.includes('NOMBRE') || h.includes('RAZON'));
-            const idxNit = encabezados.findIndex(h => h.includes('NIT') || h.includes('CEDULA'));
-            const idxCorreo = encabezados.findIndex(h => h.includes('CORREO'));
-            const idxDireccion = encabezados.findIndex(h => h.includes('DIRECCION'));
-            const idxTelefono = encabezados.findIndex(h => h.includes('TELEFONO'));
-            const idxFecha = encabezados.findIndex(h => h.includes('FECHA'));
-            const idxCategoria = encabezados.findIndex(h => h.includes('CATEGORIA'));
-            const idxReferencia = encabezados.findIndex(h => h.includes('REFERENCIA'));
-            const idxTalla = encabezados.findIndex(h => h.includes('TALLA'));
-            const idxColor = encabezados.findIndex(h => h.includes('COLOR'));
-            const idxCantidad = encabezados.findIndex(h => h.includes('CANTIDAD'));
-            const idxPrecio = encabezados.findIndex(h => h.includes('PRECIO'));
-            
-            let datosComprador = {};
-            const productos = [];
-            
-            for (let i = 1; i < lineas.length; i++) {
-                if (!lineas[i].trim()) continue;
-                const valores = lineas[i].split(separador).map(v => v.replace(/"/g, '').trim());
-                if (valores.length < 2) continue;
-                
-                if (i === 1) {
-                    datosComprador = {
-                        nombre: valores[idxNombre] || '',
-                        nit: valores[idxNit] || '',
-                        correo: valores[idxCorreo] || '',
-                        direccion: valores[idxDireccion] || '',
-                        telefono: valores[idxTelefono] || '',
-                        fecha: valores[idxFecha] || new Date().toLocaleDateString()
-                    };
-                }
-                
-                if (valores[idxReferencia] && valores[idxReferencia].trim() !== '') {
-                    productos.push({
-                        categoria: valores[idxCategoria] || 'BODY',
-                        referencia: valores[idxReferencia],
-                        talla: valores[idxTalla] || 'S/M',
-                        color: valores[idxColor] || 'NEGRO',
-                        cantidad: parseInt(valores[idxCantidad]) || 1,
-                        precioUnitario: parseInt(valores[idxPrecio]) || 0
-                    });
-                }
-            }
-            
-            document.getElementById('clienteNombre').value = datosComprador.nombre || '';
-            document.getElementById('clienteCedula').value = datosComprador.nit || '';
-            document.getElementById('clienteEmail').value = datosComprador.correo || '';
-            document.getElementById('clienteTelefono').value = datosComprador.telefono || '';
-            if (document.getElementById('fechaFactura')) {
-                document.getElementById('fechaFactura').value = datosComprador.fecha || new Date().toLocaleDateString();
-            }
-            
-            window.productosFactura = productos;
-            alert(`✅ Cargados: ${productos.length} productos | Cliente: ${datosComprador.nombre || 'Sin nombre'}`);
-            console.log("Productos cargados:", productos);
-        };
-        reader.readAsText(file, 'UTF-8');
+    window.cerrarModalAgregarProducto = function() {
+        document.getElementById('modalAgregarProductoFactura').classList.add('hidden');
+        document.getElementById('modalAgregarProductoFactura').classList.remove('flex');
     };
-    input.click();
-};
+    
+    window.seleccionarTallaFactura = function(talla) {
+        document.getElementById('facturaTalla').value = talla;
+        document.querySelectorAll('.tallaFacturaBtn').forEach(btn => {
+            btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
+            btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');
+        });
+        const btn = document.getElementById(`tallaFactura_${talla}`);
+        if (btn) {
+            btn.classList.remove('bg-white', 'text-[#4d4845]');
+            btn.classList.add('bg-[#F5ECDC]', 'text-[#4d4845]');
+        }
+    };
+    
+    window.seleccionarColorFactura = function(color) {
+        document.getElementById('facturaColor').value = color;
+        document.querySelectorAll('.colorFacturaBtn').forEach(btn => btn.classList.remove('ring-2', 'ring-[#7B7369]'));
+        if (event && event.target) event.target.classList.add('ring-2', 'ring-[#7B7369]');
+    };
+    
+    window.confirmarAgregarProductoFactura = function() {
+        const categoria = document.getElementById('facturaCategoria').value;
+        const referencia = document.getElementById('facturaReferencia').value;
+        const talla = document.getElementById('facturaTalla').value;
+        const color = document.getElementById('facturaColor').value;
+        const cantidad = parseInt(document.getElementById('facturaCantidad').value);
+        let precio = parseFloat(document.getElementById('facturaPrecio').value);
+        
+        if (!referencia) { alert("❌ Selecciona una referencia"); return; }
+        if (!talla) { alert("❌ Selecciona una talla"); return; }
+        if (!color) { alert("❌ Selecciona un color"); return; }
+        if (isNaN(precio) || precio <= 0) { alert("❌ Ingresa un precio válido"); return; }
+        
+        productosFacturaTemp.push({ categoria, referencia, talla, color, cantidad, precio });
+        window.actualizarListaProductosFactura();
+        window.cerrarModalAgregarProducto();
+        
+        document.getElementById('facturaReferencia').value = '';
+        document.getElementById('facturaTalla').value = '';
+        document.getElementById('facturaColor').value = '';
+        document.getElementById('facturaCantidad').value = '1';
+        document.getElementById('facturaPrecio').value = '';
+        document.querySelectorAll('.tallaFacturaBtn').forEach(btn => {
+            btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
+            btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');
+        });
+        document.querySelectorAll('.colorFacturaBtn').forEach(btn => btn.classList.remove('ring-2', 'ring-[#7B7369]'));
+    };
+    
+    window.actualizarListaProductosFactura = function() {
+        const contenedor = document.getElementById('listaProductosFactura');
+        if (!contenedor) return;
+        if (productosFacturaTemp.length === 0) {
+            contenedor.innerHTML = '<p class="text-gray-400 text-sm">No hay productos agregados</p>';
+            return;
+        }
+        let html = '';
+        for (let i = 0; i < productosFacturaTemp.length; i++) {
+            const p = productosFacturaTemp[i];
+            html += `<div class="flex justify-between items-center bg-white p-2 rounded-lg border">
+                <div class="text-sm"><strong>${p.referencia}</strong> - ${p.color} (${p.talla}) x${p.cantidad}<br><span class="text-xs text-gray-500">$${p.precio.toLocaleString()} c/u</span></div>
+                <div class="flex gap-2"><span class="font-bold">$${(p.precio * p.cantidad).toLocaleString()}</span><button onclick="eliminarProductoFactura(${i})" class="text-red-500"><i class="fas fa-trash-alt"></i></button></div>
+            </div>`;
+        }
+        contenedor.innerHTML = html;
+    };
+    
+    window.eliminarProductoFactura = function(index) {
+        productosFacturaTemp.splice(index, 1);
+        window.actualizarListaProductosFactura();
+    };
+    
+    window.agregarProductoFactura = function() {
+        document.getElementById('facturaReferencia').value = '';
+        document.getElementById('facturaTalla').value = '';
+        document.getElementById('facturaColor').value = '';
+        document.getElementById('facturaCantidad').value = '1';
+        document.getElementById('facturaPrecio').value = '';
+        document.getElementById('modalAgregarProductoFactura').classList.remove('hidden');
+        document.getElementById('modalAgregarProductoFactura').classList.add('flex');
+        
+        const selectReferencia = document.getElementById('facturaReferencia');
+        if (selectReferencia) {
+            import('./js/firebase-products.js').then(async (m) => {
+                const productosFB = await m.cargarProductosFirestore();
+                const referenciasUnicas = {};
+                productosFB.forEach(p => { const nombre = p.NOMBRE || p.nombre; if (nombre && !referenciasUnicas[nombre]) referenciasUnicas[nombre] = nombre; });
+                selectReferencia.innerHTML = '<option value="">Selecciona una referencia</option>';
+                Object.keys(referenciasUnicas).forEach(ref => { selectReferencia.innerHTML += `<option value="${ref}">${ref}</option>`; });
+            });
+        }
+    };
     
     window.generarFacturaPDF = function() {
-    const empresa = {
-        razon: document.getElementById('empresaRazon').value,
-        nit: document.getElementById('empresaNit').value,
-        direccion: document.getElementById('empresaDireccion').value || 'No aplica',
-        telefono: document.getElementById('empresaTelefono').value
+        const empresa = {
+            razon: document.getElementById('empresaRazon').value,
+            nit: document.getElementById('empresaNit').value,
+            direccion: document.getElementById('empresaDireccion').value || 'No aplica',
+            telefono: document.getElementById('empresaTelefono').value
+        };
+        const cliente = {
+            nombre: document.getElementById('clienteNombre').value,
+            cedula: document.getElementById('clienteCedula').value,
+            email: document.getElementById('clienteEmail').value,
+            telefono: document.getElementById('clienteTelefono').value,
+            fecha: document.getElementById('fechaFactura')?.value || new Date().toLocaleDateString()
+        };
+        
+        if (!cliente.nombre || !cliente.cedula) { alert("❌ Completa los datos del comprador"); return; }
+        if (productosFacturaTemp.length === 0) { alert("❌ Agrega al menos un producto"); return; }
+        
+        let subtotal = 0;
+        let productosHTML = '';
+        for (const p of productosFacturaTemp) {
+            const totalProducto = p.cantidad * p.precio;
+            subtotal += totalProducto;
+            productosHTML += `<tr><td class="border p-2">${p.categoria}</td><td class="border p-2">${p.referencia}</td><td class="border p-2">${p.talla}</td><td class="border p-2">${p.color} x${p.cantidad}</td><td class="border p-2 text-right">$${p.precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
+        }
+        
+        const numeroFactura = 'FAC-' + Date.now();
+        const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
+            body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
+            .factura-container { max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
+            .logo-area img { max-width: 120px; }
+            .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
+            .factura-info { text-align: right; }
+            .factura-info p { margin: 3px 0; font-size: 12px; color: #666; }
+            .factura-info h2 { color: #4d4845; margin: 0 0 5px; }
+            .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
+            .datos-cliente h3, .datos-empresa h3 { color: #4d4845; margin: 0 0 10px; font-size: 14px; }
+            .datos-cliente p, .datos-empresa p { margin: 5px 0; font-size: 12px; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background: #4d4845; color: white; }
+            .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
+            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
+        </style></head><body>
+            <div class="factura-container"><div class="header"><div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div><div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div></div>
+            <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3><p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p><p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p></div>
+            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p><p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p></div>
+            <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Producto</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>${productosHTML}</tbody>
+            <tfoot><tr><td colspan="5" style="text-align:right"><strong>TOTAL:</strong></td><td class="text-right"><strong>$${subtotal.toLocaleString()}</strong></td></tr></tfoot></table>
+            <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div></div>
+        </body></html>`;
+        
+        const ventana = window.open('', '_blank');
+        ventana.document.write(contenidoHTML);
+        ventana.document.close();
+        ventana.print();
     };
     
-    const cliente = {
-        nombre: document.getElementById('clienteNombre').value,
-        cedula: document.getElementById('clienteCedula').value,
-        email: document.getElementById('clienteEmail').value,
-        telefono: document.getElementById('clienteTelefono').value,
-        fecha: document.getElementById('fechaFactura')?.value || new Date().toLocaleDateString()
-    };
-    
-    if (!cliente.nombre || !cliente.cedula) {
-        alert("❌ Completa los datos del comprador (Nombre y Cédula/NIT)");
-        return;
-    }
-    
-    const productos = window.productosFactura || [];
-    if (productos.length === 0) {
-        alert("❌ Carga primero un archivo Excel con productos");
-        return;
-    }
-    
-    // Calcular total
-    let subtotal = 0;
-    let productosHTML = '';
-    for (const p of productos) {
-        const totalProducto = p.cantidad * p.precioUnitario;
-        subtotal += totalProducto;
-        productosHTML += `<tr><td>${p.categoria}</td><td>${p.referencia}</td><td>${p.talla}</td><td>${p.color}</td><td>${p.cantidad}</td><td>$${p.precioUnitario.toLocaleString()}</td><td>$${totalProducto.toLocaleString()}</td></tr>`;
-    }
-    
-    const numeroFactura = 'FAC-' + Date.now();
-    
-    const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
-        body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
-        .factura-container { max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
-        .logo-area img { max-width: 120px; }
-        .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
-        .factura-info { text-align: right; }
-        .factura-info p { margin: 3px 0; font-size: 12px; color: #666; }
-        .factura-info h2 { color: #4d4845; margin: 0 0 5px; }
-        .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
-        .datos-cliente h3, .datos-empresa h3 { color: #4d4845; margin: 0 0 10px; font-size: 14px; }
-        .datos-cliente p, .datos-empresa p { margin: 5px 0; font-size: 12px; color: #333; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 11px; }
-        th { background: #4d4845; color: white; }
-        .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
-        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
-    </style></head><body>
-        <div class="factura-container">
-            <div class="header">
-                <div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div>
-                <div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div>
-            </div>
-            <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3>
-                <p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p>
-                <p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p>
-            </div>
-            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3>
-                <p><strong>Nombre / Razón Social:</strong> ${cliente.nombre}</p><p><strong>Cédula / NIT:</strong> ${cliente.cedula}</p>
-                <p><strong>Correo electrónico:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p>
-            </div>
-            <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Color</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
-            <tbody>${productosHTML}</tbody>
-            <tfoot><tr><td colspan="6" style="text-align:right"><strong>TOTAL:</strong></td><td><strong>$${subtotal.toLocaleString()}</strong></td></tr></tfoot></table>
-            <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div>
-        </div>
-    </body></html>`;
-    
-    const ventana = window.open('', '_blank');
-    ventana.document.write(contenidoHTML);
-    ventana.document.close();
-    ventana.print();
-};
-    </script>
+    document.getElementById('btnAgregarProductoFactura').addEventListener('click', window.agregarProductoFactura);
+</script>
     <!-- Modal Factura -->
     <div id="modalFactura" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
         <div class="absolute inset-0 bg-black bg-opacity-60"></div>
@@ -852,16 +631,18 @@
                             <label class="block text-xs font-semibold mb-1">Fecha Factura</label>
                             <input type="text" id="fechaFactura" value="${new Date().toLocaleDateString()}" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
                         </div>
+                        
                     </div>
                 </div>
                 <!-- Acciones -->
-                <div class="flex gap-3 pt-4 border-t">
-                    <button onclick="descargarPlantillaExcel()" class="flex-1 bg-[#4d4845] text-white py-2 rounded-full text-sm font-semibold hover:bg-[#4a2e24] transition">
-                        <i class="fas fa-download mr-2"></i>Descargar plantilla Excel
+                <div class="bg-[#F9F6F0] p-4 rounded-xl">
+                    <h3 class="font-bold mb-3">📦 Productos</h3>
+                    <button id="btnAgregarProductoFactura" type="button" class="bg-[#4d4845] text-white px-4 py-2 rounded-full text-sm">
+                        <i class="fas fa-plus mr-2"></i>Agregar producto
                     </button>
-                    <button onclick="cargarExcelDatos()" class="flex-1 bg-[#7B7369] text-white py-2 rounded-full text-sm font-semibold hover:bg-[#4d4845] transition">
-                        <i class="fas fa-upload mr-2"></i>Cargar Excel con datos
-                    </button>
+                    <div id="listaProductosFactura" class="mt-3 space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-gray-400 text-sm">No hay productos agregados</p>
+                    </div>
                 </div>
                 
                 <div class="flex gap-3">
@@ -875,5 +656,68 @@
             </div>
         </div>
     </div>
+    <!-- Modal para agregar producto a factura -->
+<div id="modalAgregarProductoFactura" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div class="relative bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 z-10">
+        <div class="flex justify-between items-center mb-4 pb-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-box-open text-[#7B7369] mr-2"></i>Agregar producto</h2>
+            <button onclick="cerrarModalAgregarProducto()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1">Categoría</label>
+                <select id="facturaCategoria" class="w-full border rounded-xl px-3 py-2">
+                    <option value="BODY">BODY</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Referencia</label>
+                <select id="facturaReferencia" class="w-full border rounded-xl px-3 py-2">
+                    <option value="">Selecciona una referencia</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Talla</label>
+                <div class="flex gap-3">
+                    <button type="button" onclick="seleccionarTallaFactura('S/M')" id="tallaFactura_S/M" class="tallaFacturaBtn flex-1 py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC]">S/M</button>
+                    <button type="button" onclick="seleccionarTallaFactura('L/XL')" id="tallaFactura_L/XL" class="tallaFacturaBtn flex-1 py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC]">L/XL</button>
+                </div>
+                <input type="hidden" id="facturaTalla" value="">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Color</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="seleccionarColorFactura('MARFIL')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#F5ECDC] text-[#4d4845]">MARFIL</button>
+                    <button type="button" onclick="seleccionarColorFactura('NEGRO')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#1A1A1A] text-white">NEGRO</button>
+                    <button type="button" onclick="seleccionarColorFactura('COCOA')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#99705D] text-white">COCOA</button>
+                    <button type="button" onclick="seleccionarColorFactura('BEIGE')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#DEC6A9] text-[#4d4845]">BEIGE</button>
+                </div>
+                <input type="hidden" id="facturaColor" value="">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Cantidad</label>
+                <input type="number" id="facturaCantidad" value="1" min="1" class="w-full border rounded-xl px-3 py-2">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Precio unitario (COP)</label>
+                <input type="number" id="facturaPrecio" placeholder="Precio del producto" class="w-full border rounded-xl px-3 py-2">
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button onclick="confirmarAgregarProductoFactura()" class="flex-1 btn-primary py-2 rounded-full">Agregar</button>
+                <button onclick="cerrarModalAgregarProducto()" class="flex-1 border border-gray-300 rounded-full py-2">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
     </body>
     </html>
