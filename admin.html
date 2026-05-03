@@ -480,9 +480,13 @@
             </html>`;
                     
                     const ventana = window.open('', '_blank');
-                    ventana.document.write(contenidoHTML);
-                    ventana.document.close();
-                    ventana.print();
+                        if (ventana) {
+                            ventana.document.write(contenidoHTML);
+                            ventana.document.close();
+                            ventana.print();
+                        } else {
+                            alert("❌ El navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio.");
+                        }
                 } catch (error) {
                     console.error("Error generando factura:", error);
                     alert("❌ Error al generar la factura");
