@@ -371,7 +371,7 @@
                     `;
                 } else {
                     const nombre = p.nombre || p.NOMBRE || 'Producto';
-                    const color = p.colorNombre || p.COLORNOMBRE || '';
+                    const color = p.color || p.colorNombre || p.COLORNOMBRE || '';
                     const talla = p.talla || '';
                     const cantidad = p.cantidad || 1;
                     const precio = (p.precio || p.PRECIO || 0) * cantidad;
