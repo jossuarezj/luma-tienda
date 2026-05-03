@@ -544,8 +544,8 @@
     };
     
     window.descargarPlantillaExcel = function() {
-    // Usar tabulación como separador (más compatible con Excel)
-    const separador = "\t";
+    // Usar punto y coma como separador (Excel lo detecta automáticamente)
+    const separador = ";";
     
     const encabezados = [
         "FECHA",
@@ -562,52 +562,69 @@
         "PRECIO_UNITARIO"
     ];
     
-    const ejemplo = [
-        new Date().toLocaleDateString(),
-        "Ejemplo: María López",
-        "1234567890",
-        "ejemplo@email.com",
-        "Calle 123",
-        "3001234567",
-        "BODY",
-        "SERENA",
-        "S/M",
-        "NEGRO",
-        "2",
-        "49990"
+    // Filas de ejemplo
+    const filas = [
+        encabezados,
+        [
+            new Date().toLocaleDateString(),
+            "María López",
+            "1234567890",
+            "maria@ejemplo.com",
+            "Calle 123",
+            "3001234567",
+            "BODY",
+            "SERENA",
+            "S/M",
+            "NEGRO",
+            "2",
+            "49990"
+        ],
+        [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "BODY",
+            "ALMA",
+            "L/XL",
+            "MARFIL",
+            "1",
+            "49990"
+        ],
+        [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "BODY",
+            "SERENA",
+            "S/M",
+            "BEIGE",
+            "3",
+            "44990"
+        ]
     ];
     
-    // Crear contenido con tabuladores
-    const contenido = encabezados.join(separador) + "\n" + ejemplo.join(separador);
+    let contenido = "";
+    for (const fila of filas) {
+        contenido += fila.join(separador) + "\n";
+    }
     
-    // Agregar más filas de ejemplo
-    const ejemplo2 = [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "BODY",
-        "ALMA",
-        "L/XL",
-        "MARFIL",
-        "1",
-        "49990"
-    ];
-    const contenidoFinal = contenido + "\n" + ejemplo2.join(separador);
-    
-    const blob = new Blob(["\uFEFF" + contenidoFinal], { type: "application/vnd.ms-excel" });
+    const blob = new Blob(["\uFEFF" + contenido], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
-    link.setAttribute("download", "plantilla_factura.xls");
+    link.setAttribute("download", "plantilla_factura.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    alert("✅ Plantilla descargada. Para ver las columnas correctamente: Abre Excel → Datos → Desde texto/CSV → selecciona el archivo → Delimitado por tabulación.");
+    alert("✅ Plantilla descargada. Ábrela con Excel (se verá como tabla normal). Completa los datos y guárdala como CSV.");
 };
     
     window.cargarExcelDatos = function() {
@@ -623,15 +640,22 @@
         reader.onload = (e) => {
             const contenido = e.target.result;
             const lineas = contenido.split('\n');
-            const encabezados = lineas[0].split(',').map(h => h.replace(/"/g, '').trim());
             
-            // Mapear índices de columnas
-            const idxFecha = encabezados.findIndex(h => h.includes('FECHA'));
+            // Detectar separador (punto y coma o coma)
+            let separador = ",";
+            if (lineas[0] && lineas[0].includes(";")) {
+                separador = ";";
+            }
+            
+            const encabezados = lineas[0].split(separador).map(h => h.replace(/"/g, '').trim());
+            
+            // Mapear índices
             const idxNombre = encabezados.findIndex(h => h.includes('NOMBRE') || h.includes('RAZON'));
             const idxNit = encabezados.findIndex(h => h.includes('NIT') || h.includes('CEDULA'));
             const idxCorreo = encabezados.findIndex(h => h.includes('CORREO'));
             const idxDireccion = encabezados.findIndex(h => h.includes('DIRECCION'));
             const idxTelefono = encabezados.findIndex(h => h.includes('TELEFONO'));
+            const idxFecha = encabezados.findIndex(h => h.includes('FECHA'));
             const idxCategoria = encabezados.findIndex(h => h.includes('CATEGORIA'));
             const idxReferencia = encabezados.findIndex(h => h.includes('REFERENCIA'));
             const idxTalla = encabezados.findIndex(h => h.includes('TALLA'));
@@ -639,15 +663,14 @@
             const idxCantidad = encabezados.findIndex(h => h.includes('CANTIDAD'));
             const idxPrecio = encabezados.findIndex(h => h.includes('PRECIO'));
             
-            // Procesar filas
-            const productos = [];
             let datosComprador = {};
+            const productos = [];
             
             for (let i = 1; i < lineas.length; i++) {
                 if (!lineas[i].trim()) continue;
-                const valores = lineas[i].split(',').map(v => v.replace(/"/g, '').trim());
+                const valores = lineas[i].split(separador).map(v => v.replace(/"/g, '').trim());
+                if (valores.length < 2) continue;
                 
-                // Guardar datos del comprador (primer fila)
                 if (i === 1) {
                     datosComprador = {
                         nombre: valores[idxNombre] || '',
@@ -659,7 +682,6 @@
                     };
                 }
                 
-                // Guardar producto
                 if (valores[idxReferencia] && valores[idxReferencia].trim() !== '') {
                     productos.push({
                         categoria: valores[idxCategoria] || 'BODY',
@@ -672,19 +694,16 @@
                 }
             }
             
-            // Llenar campos del comprador en el modal
-            document.getElementById('clienteNombre').value = datosComprador.nombre;
-            document.getElementById('clienteCedula').value = datosComprador.nit;
-            document.getElementById('clienteEmail').value = datosComprador.correo;
-            document.getElementById('clienteTelefono').value = datosComprador.telefono;
-            document.getElementById('fechaFactura').value = datosComprador.fecha;
+            document.getElementById('clienteNombre').value = datosComprador.nombre || '';
+            document.getElementById('clienteCedula').value = datosComprador.nit || '';
+            document.getElementById('clienteEmail').value = datosComprador.correo || '';
+            document.getElementById('clienteTelefono').value = datosComprador.telefono || '';
+            if (document.getElementById('fechaFactura')) {
+                document.getElementById('fechaFactura').value = datosComprador.fecha || new Date().toLocaleDateString();
+            }
             
-            // Guardar productos en variable global para el PDF
             window.productosFactura = productos;
-            
-            alert(`✅ Cargados: ${productos.length} productos | Cliente: ${datosComprador.nombre}`);
-            
-            // Mostrar resumen de productos en consola
+            alert(`✅ Cargados: ${productos.length} productos | Cliente: ${datosComprador.nombre || 'Sin nombre'}`);
             console.log("Productos cargados:", productos);
         };
         reader.readAsText(file, 'UTF-8');
