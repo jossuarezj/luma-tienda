@@ -544,7 +544,9 @@
     };
     
     window.descargarPlantillaExcel = function() {
-    // Encabezados de la plantilla
+    // Usar tabulación como separador (más compatible con Excel)
+    const separador = "\t";
+    
     const encabezados = [
         "FECHA",
         "NOMBRE_RAZON_SOCIAL",
@@ -560,7 +562,6 @@
         "PRECIO_UNITARIO"
     ];
     
-    // Fila de ejemplo (opcional)
     const ejemplo = [
         new Date().toLocaleDateString(),
         "Ejemplo: María López",
@@ -576,12 +577,27 @@
         "49990"
     ];
     
-    // Crear filas: encabezados + ejemplo
-    const filas = [encabezados.join(","), ejemplo.map(v => `"${v}"`).join(",")];
-    const csvContent = filas.join("\n");
+    // Crear contenido con tabuladores
+    const contenido = encabezados.join(separador) + "\n" + ejemplo.join(separador);
     
-    // Descargar como .xls (Excel puede abrirlo)
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "application/vnd.ms-excel" });
+    // Agregar más filas de ejemplo
+    const ejemplo2 = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "BODY",
+        "ALMA",
+        "L/XL",
+        "MARFIL",
+        "1",
+        "49990"
+    ];
+    const contenidoFinal = contenido + "\n" + ejemplo2.join(separador);
+    
+    const blob = new Blob(["\uFEFF" + contenidoFinal], { type: "application/vnd.ms-excel" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
@@ -591,7 +607,7 @@
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    alert("✅ Plantilla descargada. Abre con Excel, completa los datos (múltiples filas) y vuelve a cargar el archivo.");
+    alert("✅ Plantilla descargada. Para ver las columnas correctamente: Abre Excel → Datos → Desde texto/CSV → selecciona el archivo → Delimitado por tabulación.");
 };
     
     window.cargarExcelDatos = function() {
