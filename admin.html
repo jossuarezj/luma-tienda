@@ -407,6 +407,10 @@
     window.abrirModalFactura = function() {
         document.getElementById('modalFactura').classList.remove('hidden');
         document.getElementById('modalFactura').classList.add('flex');
+        // Establecer fecha actual
+    const hoy = new Date();
+    const fechaFormateada = hoy.toLocaleDateString();
+    document.getElementById('fechaFactura').value = fechaFormateada;
     };
     
     window.cerrarModalFactura = function() {
@@ -523,6 +527,7 @@
             cedula: document.getElementById('clienteCedula').value,
             email: document.getElementById('clienteEmail').value,
             telefono: document.getElementById('clienteTelefono').value,
+            direccion: document.getElementById('clienteDireccion').value,
             fecha: document.getElementById('fechaFactura')?.value || new Date().toLocaleDateString()
         };
         
@@ -558,7 +563,7 @@
         </style></head><body>
             <div class="factura-container"><div class="header"><div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div><div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div></div>
             <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3><p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p><p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p></div>
-            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p><p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p></div>
+            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p><p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p><p><strong>Dirección:</strong> ${cliente.direccion || 'No registrada'}</p></div>
             <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Producto</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>${productosHTML}</tbody>
             <tfoot><tr><td colspan="5" style="text-align:right"><strong>TOTAL:</strong></td><td class="text-right"><strong>$${subtotal.toLocaleString()}</strong></td></tr></tfoot></table>
             <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div></div>
@@ -629,9 +634,12 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold mb-1">Fecha Factura</label>
-                            <input type="text" id="fechaFactura" value="${new Date().toLocaleDateString()}" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
+                            <input type="text" id="fechaFactura" placeholder="DD/MM/AAAA" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
                         </div>
-                        
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold mb-1">Dirección</label>
+                            <input type="text" id="clienteDireccion" placeholder="Dirección completa" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
+                        </div>
                     </div>
                 </div>
                 <!-- Acciones -->
