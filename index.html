@@ -262,9 +262,12 @@
 <body>
 
 <!-- Banner superior de promoción -->
-<div class="bg-[#1F1D20] text-[#F5ECDC] text-center py-2 text-sm font-medium">
-    <div class="container mx-auto px-4">
-        <span>¡ENVIOS GRATIS POR COMPRAS SUPERIORES A $99.990!</span>
+<div class="bg-[#1F1D20] text-[#F5ECDC] text-center py-2 font-medium">
+    <div class="container mx-auto px-2 md:px-4">
+        <!-- Versión para móvil (texto corto) -->
+        <span class="text-[10px] md:hidden block whitespace-normal">¡ENVÍO GRATIS +$99.990!</span>
+        <!-- Versión para desktop (texto completo) -->
+        <span class="text-xs md:text-sm hidden md:block whitespace-normal">¡ENVÍOS GRATIS POR COMPRAS SUPERIORES A $99.990!</span>
     </div>
 </div>
 
