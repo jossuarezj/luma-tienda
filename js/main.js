@@ -125,6 +125,7 @@ function renderProductosDestacados() {
                         ` : ''}
                     </div>
                     <p class="text-sm text-[#7B7369]">${p.COLORNOMBRE || p.colorNombre}</p>
+                    <p class="text-[8px] md:text-[9px] text-gray-400 mt-1">SKU: ${p.SKU || p.ID || 'Cargando...'}</p>
                     <div class="flex items-center gap-2 flex-wrap mt-2">
                         ${p.PRECIOOFERTA || p.precioOferta ? `
                             <p class="text-[#7B7369] text-sm line-through">$${(p.PRECIO || p.precio).toLocaleString()}</p>
@@ -192,7 +193,7 @@ function renderProducts() {
                     ` : ''}
                 </div>
                 <p class="text-sm text-[#7B7369]">${p.COLORNOMBRE}</p>
-                <p class="text-[8px] md:text-[9px] text-gray-400 mt-1">SKU: ${p.SKU || 'Cargando...'}</p>
+                <p class="text-[8px] md:text-[9px] text-gray-400 mt-1">SKU: ${p.SKU || p.ID || 'Cargando...'}</p>
                 <div class="flex items-center gap-2 flex-wrap mt-2">
                     ${p.PRECIOOFERTA ? `
                         <p class="text-[#7B7369] text-sm line-through">$${p.PRECIO.toLocaleString()}</p>
