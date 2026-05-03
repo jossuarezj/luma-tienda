@@ -37,32 +37,42 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
     let cuponAplicado = localStorage.getItem('cuponAplicado');
     let cuponInfo = null;
     
-    if (cuponAplicado) {
-        // Intentar cargar desde localStorage primero
-        const cuponesLocal = JSON.parse(localStorage.getItem('lumaCupones')) || {};
-        cuponInfo = cuponesLocal[cuponAplicado];
-        
-        // Si no está en localStorage, intentar desde Firestore (simplificado)
-        if (!cuponInfo) {
-            try {
-                const { cargarCuponesFirestore } = await import('./firebase-cupones.js');
-                const cuponesFS = await cargarCuponesFirestore();
-                cuponInfo = cuponesFS.find(c => c.codigo === cuponAplicado && c.activo === true);
-            } catch(e) { console.log("Error cargando cupón desde Firestore", e); }
-        }
-        
-        if (cuponInfo && !cuponInfo.usado) {
-            if (cuponInfo.tipo === "porcentaje") {
-                descuento = subtotal * (cuponInfo.valor / 100);
-            } else {
-                descuento = Math.min(cuponInfo.valor, subtotal);
+    // 1. Intentar recuperar cupón desde localStorage (guardado por cart.js)
+    const cuponGuardado = localStorage.getItem('luma_current_coupon');
+    if (cuponGuardado) {
+        cuponInfo = JSON.parse(cuponGuardado);
+        console.log("✅ Cupón recuperado de luma_current_coupon:", cuponInfo);
+    } else if (cuponAplicado) {
+        // Fallback: intentar desde Firestore
+        try {
+            const { cargarCuponesFirestore } = await import('./firebase-cupones.js');
+            const cuponesFS = await cargarCuponesFirestore();
+            cuponInfo = cuponesFS.find(c => c.codigo === cuponAplicado && c.activo === true);
+            if (cuponInfo) {
+                console.log("✅ Cupón recuperado desde Firestore:", cuponInfo);
             }
+        } catch(e) { console.log("Error cargando cupón desde Firestore", e); }
+    }
+    
+    if (cuponInfo && (!cuponInfo.usosPorUsuario || !cuponInfo.usosPorUsuario.includes(user.email))) {
+        // 🔥 Calcular subtotal elegible según la regla del cupón (individuales, packs, producto)
+        // Para ello necesitamos la función calcularSubtotalElegible que está en cart.js
+        // La importaremos dinámicamente
+        const { calcularSubtotalElegible } = await import('./cart.js');
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        
+        if (cuponInfo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponInfo.valor / 100);
+        } else {
+            descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
+        console.log(`💰 Descuento aplicado: ${descuento} (cupón ${cuponInfo.codigo} - ${cuponInfo.valor}% sobre $${subtotalElegible})`);
     } else if (user.primeraCompra && !usedCoupon) {
         // Verificar si hay productos individuales (NO packs)
         const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
         if (hayProductosIndividuales) {
             descuento = subtotal * 0.3;
+            console.log(`💰 Descuento primera compra: ${descuento}`);
         }
     }
     
@@ -120,67 +130,70 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         handler.open(datosPago);
         
         window.epaycoCallback = async function(response) {
-            console.log("Respuesta ePayco:", response);
-            if (response && response.status === "Aceptada") {
-                let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
-                compras.push({ 
-                    id: Date.now(), 
-                    numeroPedido: 'LUMA-' + Date.now(),
-                    nombreCliente: user.name,
-                    usuario: user.name, 
-                    email: user.email, 
-                    fecha: new Date().toISOString(), 
-                    productos: itemsVisibles, 
-                    subtotal: subtotal, 
-                    descuento: descuento,
-                    cuponAplicado: cuponAplicado,
-                    envio: costoEnvio,
-                    total: totalConEnvio,
-                    metodoPago: "epayco",
-                    estado: "Pagado"
-                });
-                localStorage.setItem('lumaCompras', JSON.stringify(compras));
+    console.log("Respuesta ePayco:", response);
+    if (response && response.status === "Aceptada") {
+        let compras = JSON.parse(localStorage.getItem('lumaCompras')) || [];
+        compras.push({ 
+            id: Date.now(), 
+            numeroPedido: 'LUMA-' + Date.now(),
+            nombreCliente: user.name,
+            usuario: user.name, 
+            email: user.email, 
+            fecha: new Date().toISOString(), 
+            productos: itemsVisibles, 
+            subtotal: subtotal, 
+            descuento: descuento,
+            cuponAplicado: cuponAplicado,
+            envio: costoEnvio,
+            total: totalConEnvio,
+            metodoPago: "epayco",
+            estado: "Pagado"
+        });
+        localStorage.setItem('lumaCompras', JSON.stringify(compras));
 
-                try {
-                    const productosCorreo = itemsVisibles.map(item => ({
-                        nombre: item.nombre,
-                        talla: item.talla || 'Única',
-                        cantidad: item.cantidad,
-                        precio: item.precio
-                    }));
-                    
-                    const datosCorreo = {
-                        nombre: user.name || 'Cliente',
-                        email: user.email || 'cliente@email.com',
-                        numeroPedido: 'LUMA-' + Date.now(),
-                        total: totalConEnvio,
-                        metodoPago: 'epayco',
-                        direccion: 'Pago en línea',
-                        ciudad: 'No aplica',
-                        productos: productosCorreo
-                    };
-                    
-                    await enviarCorreoConfirmacion(datosCorreo);
-                    console.log('✅ Correo enviado');
-                } catch (errorCorreo) {
-                    console.error('❌ Error al enviar correo:', errorCorreo);
-                }
-                
-                const userActual = getCurrentUser();
-                if (userActual && userActual.email && !usedCoupon) {
-                    localStorage.setItem(`luma_descuento_usado_${userActual.email}`, 'true');
-                    usedCoupon = true;
-                    localStorage.setItem('lumaCouponUsed', 'true');
-                }
-                
-                localStorage.removeItem('lumaCart');
-                localStorage.removeItem('cuponAplicado');
-                window.location.reload();
-                showNotification(`✨ ¡Pago exitoso! Gracias por tu compra ${user.name} ✨`);
-            } else {
-                showNotification("❌ El pago no se completó. Intenta nuevamente.");
-            }
-        };
+        try {
+            const productosCorreo = itemsVisibles.map(item => ({
+                nombre: item.nombre,
+                talla: item.talla || 'Única',
+                cantidad: item.cantidad,
+                precio: item.precio
+            }));
+            
+            const datosCorreo = {
+                nombre: user.name || 'Cliente',
+                email: user.email || 'cliente@email.com',
+                numeroPedido: 'LUMA-' + Date.now(),
+                total: totalConEnvio,
+                metodoPago: 'epayco',
+                direccion: 'Pago en línea',
+                ciudad: 'No aplica',
+                productos: productosCorreo
+            };
+            
+            await enviarCorreoConfirmacion(datosCorreo);
+            console.log('✅ Correo enviado');
+        } catch (errorCorreo) {
+            console.error('❌ Error al enviar correo:', errorCorreo);
+        }
+        
+        const userActual = getCurrentUser();
+        if (userActual && userActual.email && !usedCoupon) {
+            localStorage.setItem(`luma_descuento_usado_${userActual.email}`, 'true');
+            usedCoupon = true;
+            localStorage.setItem('lumaCouponUsed', 'true');
+        }
+        
+        // Limpiar carrito y cupones
+        localStorage.removeItem('lumaCart');
+        localStorage.removeItem('cuponAplicado');
+        localStorage.removeItem('luma_current_coupon');  // ✅ NUEVA LÍNEA: elimina el cupón completo guardado
+        
+        window.location.reload();
+        showNotification(`✨ ¡Pago exitoso! Gracias por tu compra ${user.name} ✨`);
+    } else {
+        showNotification("❌ El pago no se completó. Intenta nuevamente.");
+    }
+};
     } catch (error) {
         console.error("❌ Error al abrir ePayco:", error);
         showNotification("Error al procesar el pago. Intenta nuevamente.");

@@ -4,7 +4,7 @@ import { guardarVentaFirestore } from './firebase-ventas.js';
 import { cargarCuponesFirestore, marcarCuponUsado } from './firebase-cupones.js';
 
 // Función para calcular el subtotal sobre el que aplica el cupón
-    function calcularSubtotalElegible(itemsVisibles, cuponInfo) {
+    export function calcularSubtotalElegible(itemsVisibles, cuponInfo) {
     if (!cuponInfo) return 0;
     
     let itemsFiltrados = [];
@@ -569,7 +569,6 @@ export async function aplicarCupon(codigo) {
         
         // Validar usos por usuario
         let usosPorUsuario = cupon.usosPorUsuario;
-        // Si es null, undefined, o no es array, convertirlo a array vacío
         if (!usosPorUsuario || !Array.isArray(usosPorUsuario)) {
             usosPorUsuario = [];
         }
@@ -604,6 +603,7 @@ export async function aplicarCupon(codigo) {
         cuponAplicado = cupon.codigo;
         cuponInfo = cupon;
         localStorage.setItem('cuponAplicado', cupon.codigo);
+        localStorage.setItem('luma_current_coupon', JSON.stringify(cupon));   // ✅ NUEVA LÍNEA
         
         updateCartUI();
         return { success: true, message: `✅ Cupón ${cupon.codigo} aplicado! ${cupon.valor}% de descuento` };
