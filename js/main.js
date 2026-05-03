@@ -637,7 +637,7 @@ window.verProducto = function(productId) {
     const imagenes = product.IMAGENES || product.imagenes || [imagen];
     const descripcion = product.DESCRIPCION || product.descripcion || "Prenda confeccionada con materiales de alta calidad.";
     const tallas = product.TALLAS || product.tallas || ["S/M", "L/XL"];
-    const sku = product.SKU || product.sku || `SKU-${product.ID || product.id}`;
+    const sku = product.SKU || product.sku || product.ID || product.id || 'Cargando...';
     const id = product.ID || product.id;
     
     let tallasArray = Array.isArray(tallas) ? tallas : ["S/M", "L/XL"];
