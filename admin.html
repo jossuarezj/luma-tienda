@@ -770,7 +770,7 @@
                     for (const p of productosFacturaTemp) {
                         const totalProducto = p.cantidad * p.precio;
                         subtotal2 += totalProducto;
-                        productosHTML += `<tr><td class="border p-2">${p.categoria}</td><td class="border p-2">${p.referencia}</td><td class="border p-2">${p.talla}</td><td class="border p-2">${p.color} x${p.cantidad}</td><td class="border p-2 text-right">$${p.precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
+                        productosHTML += `<tr><td class="border p-2">${p.categoria}</td><td class="border p-2">${p.nombre || p.referencia}</td><td class="border p-2">${p.talla}</td><td class="border p-2">${p.color} x${p.cantidad}</td><td class="border p-2 text-right">$${p.precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
                     }
                     
                     const numeroFactura = ventaData.numeroPedido;
