@@ -233,7 +233,7 @@
                         <td class="p-2 font-mono text-xs">${v.numeroPedido || v.id}</td>
                         <td class="p-2">${v.usuario || v.email}${v.ciudad ? `<br><span class="text-xs text-gray-400">${v.ciudad}</span>` : ''}</td>
                         <td class="p-2">${new Date(v.fecha).toLocaleDateString()}</td>
-                        <td class="p-2">${v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)'}</td>
+                        <td class="p-2">${v.metodoPago || (v.metodoPago === 'contraentrega' ? 'Contra entrega' : 'Tarjeta (ePayco)')}</td>
                         <td class="p-2 font-medium">$${(v.total || 0).toLocaleString()}</td>
                         <td class="p-2">
                             <select class="border rounded-lg px-2 py-1 text-xs" onchange="cambiarEstadoPago('${v.id}', this.value)">
