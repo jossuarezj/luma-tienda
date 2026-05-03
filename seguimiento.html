@@ -57,23 +57,38 @@
         .guia-card {
             background: linear-gradient(135deg, #4d4845 0%, #4a2e24 100%);
         }
+        .buscador-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .resultado-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        .resultado-card:hover {
+            transform: translateY(-4px);
+        }
+        .badge-confirmado { background: #3b82f6; color: white; }
+        .badge-preparando { background: #f59e0b; color: white; }
+        .badge-enviado { background: #8b5cf6; color: white; }
+        .badge-entregado { background: #10b981; color: white; }
     </style>
 </head>
 <body class="min-h-screen">
 
 <!-- Header -->
-<header class="bg-white shadow-sm">
+<header class="bg-white shadow-sm sticky top-0 z-50">
     <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
-            <!-- Logo y eslogan - Izquierda -->
             <div class="flex items-center gap-3">
                 <a href="index.html" class="inline-block leading-none">
                     <img src="https://i.postimg.cc/fTK149zg/L0G0-SIN-F0ND0-02.png" alt="LUMA Logo" class="h-10 md:h-12 w-auto object-contain">
                 </a>
                 <p class="text-[10px] text-[#7b7369] tracking-wide hidden sm:block">Comodidad que se nota</p>
             </div>
-            
-            <!-- Volver a la tienda - Derecha -->
             <a href="index.html" class="text-[#7B7369] hover:text-[#4d4845] transition flex items-center gap-2 text-sm md:text-base">
                 <i class="fas fa-arrow-left"></i> 
                 <span>Volver a la tienda</span>
@@ -84,17 +99,20 @@
 
 <main class="container mx-auto px-4 py-12 max-w-3xl">
     <!-- Formulario de búsqueda -->
-    <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-[#1F1D20] mb-2">📦 Seguimiento de pedido</h1>
+    <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#F2EBDC] mb-4">
+            <i class="fas fa-search text-3xl text-[#7B7369]"></i>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold text-[#1F1D20] mb-3">Seguimiento de pedido</h1>
         <p class="text-[#7B7369]">Ingresa tu número de pedido para ver el estado de tu envío</p>
     </div>
     
-    <div class="bg-white rounded-2xl shadow-md p-6 mb-8">
-        <div class="flex gap-3">
+    <div class="buscador-card p-6 mb-8">
+        <div class="flex flex-col sm:flex-row gap-3">
             <input type="text" id="numeroPedido" placeholder="Ej: LUMA-1734567890123" 
-                   class="flex-1 border border-[#F2EBDC] rounded-full px-5 py-3 focus:outline-none focus:border-[#7B7369]">
-            <button onclick="buscarPedido()" class="btn-primary px-6 py-3 rounded-full font-semibold">
-                <i class="fas fa-search mr-2"></i> Buscar
+                   class="flex-1 border border-[#F2EBDC] rounded-full px-5 py-3 focus:outline-none focus:border-[#7B7369] focus:ring-2 focus:ring-[#7B7369]/20 transition">
+            <button onclick="buscarPedido()" class="btn-primary px-8 py-3 rounded-full font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-search"></i> Buscar pedido
             </button>
         </div>
         <div id="errorMessage" class="text-red-500 text-sm mt-3 hidden text-center"></div>
@@ -102,102 +120,116 @@
     
     <!-- Resultados -->
     <div id="resultadoPedido" class="hidden">
-        <!-- Datos del pedido -->
-        <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
-            <div class="flex justify-between items-start flex-wrap gap-4 mb-4">
+        <div class="resultado-card p-6 mb-6">
+            <!-- Encabezado del pedido -->
+            <div class="flex flex-wrap justify-between items-start gap-4 mb-6 pb-4 border-b border-[#F2EBDC]">
                 <div>
-                    <h2 class="text-xl font-bold" id="pedidoNumero"></h2>
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-receipt text-[#7B7369]"></i>
+                        <h2 class="text-xl font-bold text-[#1F1D20]" id="pedidoNumero"></h2>
+                    </div>
                     <p class="text-sm text-gray-500" id="pedidoFecha"></p>
                 </div>
-                <span id="pedidoEstadoBadge" class="px-4 py-2 rounded-full text-sm font-semibold"></span>
+                <span id="pedidoEstadoBadge" class="px-4 py-2 rounded-full text-sm font-semibold shadow-sm"></span>
             </div>
             
-            <!-- Número de guía y transportadora -->
-            <div id="guiaContainer" class="guia-card rounded-xl p-4 mb-4 text-white hidden">
-                <div class="flex justify-between items-center flex-wrap gap-3">
-                    <div>
-                        <p class="text-xs opacity-80">NÚMERO DE GUÍA</p>
-                        <p id="numeroGuia" class="text-lg font-bold tracking-wider"></p>
+            <!-- Número de guía -->
+            <div id="guiaContainer" class="guia-card rounded-xl p-4 mb-6 text-white hidden">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-truck text-2xl opacity-80"></i>
+                        <div>
+                            <p class="text-xs opacity-80">NÚMERO DE GUÍA</p>
+                            <p id="numeroGuia" class="text-lg font-bold tracking-wider"></p>
+                        </div>
                     </div>
                     <div>
                         <p class="text-xs opacity-80">TRANSPORTADORA</p>
                         <p id="transportadoraNombre" class="font-semibold"></p>
                     </div>
-                    <a id="linkSeguimiento" href="#" target="_blank" class="bg-white text-[#4d4845] px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#7B7369] hover:text-white transition">
-                        <i class="fas fa-external-link-alt mr-1"></i> Rastrear
+                    <a id="linkSeguimiento" href="#" target="_blank" class="bg-white text-[#4d4845] px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#7B7369] hover:text-white transition flex items-center gap-2">
+                        <i class="fas fa-external-link-alt"></i> Rastrear
                     </a>
                 </div>
             </div>
             
-            <div class="border-t border-[#F2EBDC] pt-4 mb-4">
-                <h3 class="font-semibold mb-2">📋 Productos:</h3>
-                <div id="pedidoProductos" class="space-y-2"></div>
-                <div class="flex justify-between mt-3 pt-2 border-t border-[#F2EBDC]">
-                    <span class="font-bold">Total pagado:</span>
-                    <span id="pedidoTotal" class="font-bold text-[#7B7369]"></span>
+            <!-- Productos -->
+            <div class="mb-6">
+                <h3 class="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <i class="fas fa-box text-[#7B7369]"></i> Productos
+                </h3>
+                <div id="pedidoProductos" class="space-y-2 bg-[#F9F6F0] rounded-xl p-4"></div>
+                <div class="flex justify-between items-center mt-4 pt-3 border-t border-[#F2EBDC]">
+                    <span class="font-bold text-lg">Total pagado:</span>
+                    <span id="pedidoTotal" class="font-bold text-xl text-[#7B7369]"></span>
                 </div>
             </div>
             
-            <div class="bg-[#F9F6F0] rounded-xl p-4">
-                <h3 class="font-semibold mb-2">📍 Dirección de entrega:</h3>
-                <p id="pedidoDireccion" class="text-sm text-[#7B7369]"></p>
+            <!-- Dirección -->
+            <div class="bg-white border border-[#F2EBDC] rounded-xl p-4">
+                <h3 class="font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-map-marker-alt text-[#7B7369]"></i> Dirección de entrega
+                </h3>
+                <p id="pedidoDireccion" class="text-sm text-[#4D4845]"></p>
             </div>
         </div>
         
-        <!-- Timeline de estados -->
-        <div class="bg-white rounded-2xl shadow-md p-6">
-            <h3 class="font-semibold mb-6 text-center">🚚 Estado del pedido</h3>
+        <!-- Timeline -->
+        <div class="resultado-card p-6">
+            <h3 class="font-semibold text-lg mb-6 text-center flex items-center justify-center gap-2">
+                <i class="fas fa-truck-fast text-[#7B7369]"></i> Estado del pedido
+            </h3>
             <div class="relative">
                 <div id="timeline" class="space-y-6">
                     <!-- Paso 1 -->
                     <div class="flex items-start gap-4">
                         <div class="relative">
-                            <div id="step1Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                            <div id="step1Icon" class="w-12 h-12 rounded-full flex items-center justify-center step-pending shadow-md">
                                 <i class="fas fa-check text-white text-sm hidden"></i>
                                 <span class="text-sm font-bold">1</span>
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-semibold">Pedido confirmado</h4>
+                            <h4 class="font-semibold text-[#1F1D20]">Pedido confirmado</h4>
                             <p class="text-sm text-gray-500" id="step1Fecha"></p>
                         </div>
                     </div>
                     <!-- Paso 2 -->
                     <div class="flex items-start gap-4">
                         <div class="relative">
-                            <div id="step2Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                            <div id="step2Icon" class="w-12 h-12 rounded-full flex items-center justify-center step-pending shadow-md">
                                 <i class="fas fa-check text-white text-sm hidden"></i>
                                 <span class="text-sm font-bold">2</span>
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-semibold">Preparando pedido</h4>
+                            <h4 class="font-semibold text-[#1F1D20]">Preparando pedido</h4>
                             <p class="text-sm text-gray-500" id="step2Fecha"></p>
                         </div>
                     </div>
                     <!-- Paso 3 -->
                     <div class="flex items-start gap-4">
                         <div class="relative">
-                            <div id="step3Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                            <div id="step3Icon" class="w-12 h-12 rounded-full flex items-center justify-center step-pending shadow-md">
                                 <i class="fas fa-check text-white text-sm hidden"></i>
                                 <span class="text-sm font-bold">3</span>
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-semibold">En camino</h4>
+                            <h4 class="font-semibold text-[#1F1D20]">En camino</h4>
                             <p class="text-sm text-gray-500" id="step3Fecha"></p>
                         </div>
                     </div>
                     <!-- Paso 4 -->
                     <div class="flex items-start gap-4">
                         <div class="relative">
-                            <div id="step4Icon" class="w-10 h-10 rounded-full flex items-center justify-center step-pending">
+                            <div id="step4Icon" class="w-12 h-12 rounded-full flex items-center justify-center step-pending shadow-md">
                                 <i class="fas fa-check text-white text-sm hidden"></i>
                                 <span class="text-sm font-bold">4</span>
                             </div>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-semibold">Entregado</h4>
+                            <h4 class="font-semibold text-[#1F1D20]">Entregado</h4>
                             <p class="text-sm text-gray-500" id="step4Fecha"></p>
                         </div>
                     </div>
@@ -207,7 +239,7 @@
     </div>
 </main>
 
-<footer class="bg-[#4d4845] text-white py-6 mt-12">
+<footer class="bg-[#4d4845] text-white py-8 mt-16">
     <div class="container mx-auto px-4 text-center text-sm">
         <p>&copy; 2026 LUMA Colombia. Todos los derechos reservados.</p>
     </div>
@@ -232,10 +264,7 @@
         errorDiv.classList.add('hidden');
         
         try {
-            // Buscar en Firestore
             const todasVentas = await cargarVentasFirestore();
-            
-            // Buscar por numeroPedido o por ID
             const pedido = todasVentas.find(v => 
                 v.numeroPedido === numeroPedido || 
                 v.id === numeroPedido ||
@@ -260,12 +289,10 @@
     function mostrarPedido(pedido) {
         document.getElementById('resultadoPedido').classList.remove('hidden');
         
-        // Datos básicos
         document.getElementById('pedidoNumero').innerText = pedido.numeroPedido || `LUMA-${pedido.id}`;
         document.getElementById('pedidoFecha').innerText = new Date(pedido.fecha).toLocaleDateString();
         document.getElementById('pedidoTotal').innerText = '$' + (pedido.total || 0).toLocaleString();
         
-        // Estado del pedido
         const estado = pedido.estadoEnvio || 'confirmado';
         let estadoTexto = '';
         let estadoColor = '';
@@ -273,30 +300,29 @@
         switch(estado) {
             case 'confirmado':
                 estadoTexto = '✅ Pedido confirmado';
-                estadoColor = 'bg-blue-100 text-blue-700';
+                estadoColor = 'badge-confirmado';
                 break;
             case 'preparando':
                 estadoTexto = '📦 En preparación';
-                estadoColor = 'bg-yellow-100 text-yellow-700';
+                estadoColor = 'badge-preparando';
                 break;
             case 'enviado':
                 estadoTexto = '🚚 En camino';
-                estadoColor = 'bg-purple-100 text-purple-700';
+                estadoColor = 'badge-enviado';
                 break;
             case 'entregado':
                 estadoTexto = '🏠 Entregado';
-                estadoColor = 'bg-green-100 text-green-700';
+                estadoColor = 'badge-entregado';
                 break;
             default:
                 estadoTexto = '✅ Pedido confirmado';
-                estadoColor = 'bg-blue-100 text-blue-700';
+                estadoColor = 'badge-confirmado';
         }
         
         const badge = document.getElementById('pedidoEstadoBadge');
         badge.innerText = estadoTexto;
-        badge.className = `px-4 py-2 rounded-full text-sm font-semibold ${estadoColor}`;
+        badge.className = `px-4 py-2 rounded-full text-sm font-semibold shadow-sm ${estadoColor}`;
         
-        // Mostrar guía y transportadora si existen
         const guiaContainer = document.getElementById('guiaContainer');
         const numeroGuia = pedido.numeroGuia || '';
         const transportadora = pedido.transportadora || '';
@@ -307,40 +333,35 @@
             document.getElementById('transportadoraNombre').innerText = transportadora;
             
             let linkRastreo = '#';
-            if (transportadora === 'Interrapidísimo') {
-                linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
-            } else if (transportadora === 'Servientrega') {
-                linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
-            } else if (transportadora === 'Envíos Nacionales') {
-                linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
-            } else if (transportadora === 'Coordinadora') {
-                linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
-            }
+            if (transportadora === 'Interrapidísimo') linkRastreo = `https://www.interrapidisimo.com/rastreo?guia=${numeroGuia}`;
+            else if (transportadora === 'Servientrega') linkRastreo = `https://www.servientrega.com.ec/rastreo-de-envios?numero_guia=${numeroGuia}`;
+            else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
+            else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
             document.getElementById('linkSeguimiento').href = linkRastreo;
         } else {
             guiaContainer.classList.add('hidden');
         }
         
-        // Productos
         const productosDiv = document.getElementById('pedidoProductos');
         const productos = pedido.productos || [];
-        
+
         if (productos.length === 0) {
             productosDiv.innerHTML = '<p class="text-sm text-gray-500">No hay productos registrados</p>';
         } else {
-            productosDiv.innerHTML = productos.map(p => {
-                // Manejar packs con productosIncluidosDetalle
+            let productosHTML = '';
+            
+            for (const p of productos) {
                 if (p.esPack && p.productosIncluidosDetalle && p.productosIncluidosDetalle.length > 0) {
                     const precioPack = p.precio || p.PRECIO || 0;
-                    return `
-                        <div class="bg-[#F2EBDC] rounded-lg p-3 mb-2">
-                            <div class="flex justify-between items-start">
-                                <p class="font-semibold text-sm mb-2">📦 ${p.nombre || p.NOMBRE}</p>
-                                <span class="font-bold text-sm">$${precioPack.toLocaleString()}</span>
+                    productosHTML += `
+                        <div class="bg-white rounded-xl p-3 mb-2 border border-[#F2EBDC]">
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-sm flex items-center gap-2">📦 ${p.nombre || p.NOMBRE}</p>
+                                <span class="font-bold text-sm text-[#7B7369]">$${precioPack.toLocaleString()}</span>
                             </div>
-                            <div class="pl-4 space-y-1 mt-2">
+                            <div class="pl-4 space-y-1">
                                 ${p.productosIncluidosDetalle.map(detalle => `
-                                    <div class="text-xs text-[#7B7369] flex justify-between">
+                                    <div class="text-xs text-[#4D4845] flex justify-between">
                                         <span>• ${detalle.nombre} - ${detalle.colorNombre} (Talla ${detalle.talla})</span>
                                         <span>x${detalle.cantidad}</span>
                                     </div>
@@ -348,30 +369,39 @@
                             </div>
                         </div>
                     `;
-                }
-                // Mostrar descuento si existe
-                if (pedido.descuento && pedido.descuento > 0) {
-                    productosDiv.innerHTML += `
-                        <div class="flex justify-between text-sm text-green-600 mt-2 pt-2 border-t border-[#F2EBDC]">
-                            <span>🎉 Descuento aplicado</span>
-                            <span>-$${pedido.descuento.toLocaleString()}</span>
+                } else {
+                    const nombre = p.nombre || p.NOMBRE || 'Producto';
+                    const color = p.colorNombre || p.COLORNOMBRE || '';
+                    const talla = p.talla || '';
+                    const cantidad = p.cantidad || 1;
+                    const precio = (p.precio || p.PRECIO || 0) * cantidad;
+                    productosHTML += `
+                        <div class="flex justify-between items-center py-2 border-b border-[#F2EBDC] last:border-0">
+                            <div class="flex-1">
+                                <p class="font-medium text-sm text-[#1F1D20]">${nombre}</p>
+                                <p class="text-xs text-[#7B7369]">${color} ${talla ? `| Talla ${talla}` : ''} x${cantidad}</p>
+                            </div>
+                            <span class="font-semibold text-sm text-[#4D4845]">$${precio.toLocaleString()}</span>
                         </div>
                     `;
                 }
-                // Producto normal
-                return `
-                    <div class="flex justify-between text-sm">
-                        <span>${p.nombre || p.NOMBRE} ${p.colorNombre || p.COLORNOMBRE || ''} ${p.talla ? `Talla ${p.talla}` : ''} x${p.cantidad || 1}</span>
-                        <span>$${((p.precio || p.PRECIO || 0) * (p.cantidad || 1)).toLocaleString()}</span>
+            }
+            
+            if (pedido.descuento && pedido.descuento > 0) {
+                productosHTML += `
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t border-[#F2EBDC] text-green-600">
+                        <span class="text-sm flex items-center gap-1"><i class="fas fa-tag"></i> Descuento aplicado</span>
+                        <span class="font-semibold">-$${pedido.descuento.toLocaleString()}</span>
                     </div>
                 `;
-            }).join('');
+            }
+            
+            productosDiv.innerHTML = productosHTML;
         }
         
-        // Dirección
         let direccionTexto = 'Pago en línea - Envío estándar';
         if (pedido.datosEnvio) {
-            direccionTexto = `${pedido.datosEnvio.direccion}, ${pedido.datosEnvio.ciudad} - ${pedido.datosEnvio.tipoVivienda || 'Casa'}`;
+            direccionTexto = `${pedido.datosEnvio.direccion}, ${pedido.datosEnvio.ciudad}`;
         } else if (pedido.direccion) {
             direccionTexto = `${pedido.direccion}, ${pedido.ciudad || ''}`;
         }
@@ -405,7 +435,6 @@
         }
     }
     
-    // Buscar automáticamente si hay número en URL
     const urlParams = new URLSearchParams(window.location.search);
     const pedidoUrl = urlParams.get('pedido');
     if (pedidoUrl) {
@@ -414,7 +443,6 @@
     }
 </script>
 
-<!-- Botón flotante de WhatsApp -->
 <script>
     function enviarWhatsAppAyuda() {
         const inputPedido = document.getElementById('numeroPedido');
