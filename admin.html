@@ -407,7 +407,7 @@
                 productosHTML += `<tr><td class="border p-2">BODY</td><td class="border p-2">${nombre}</td><td class="border p-2">${talla}</td><td class="border p-2">${color} x${cantidad}</td><td class="border p-2 text-right">$${precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
             }
             
-            const numeroFactura = ventaData.numeroPedido;
+            const numeroFactura = venta.numeroPedido || 'FAC-' + venta.id;
             const contenidoHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>' +
                 'body { font-family: "Montserrat","Arial",sans-serif; margin:0; padding:40px; background:white; }' +
                 '.factura-container { max-width:900px; margin:0 auto; border:1px solid #e0e0e0; padding:30px; border-radius:10px; }' +
