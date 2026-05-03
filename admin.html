@@ -544,21 +544,23 @@
     };
     
     window.descargarPlantillaExcel = function() {
-        const datosPlantilla = [{ "NOMBRE_COMPRADOR": "", "CEDULA_NIT": "", "CORREO": "", "TELEFONO": "" }];
-        const encabezados = Object.keys(datosPlantilla[0]);
-        const filasCSV = [encabezados.join(","), ...datosPlantilla.map(fila => encabezados.map(key => `"${fila[key]}"`).join(","))];
-        const csvContent = filasCSV.join("\n");
-        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute("download", "plantilla_clientes.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        alert("✅ Plantilla descargada");
-    };
+    const datosPlantilla = [
+        { "NOMBRE_COMPRADOR": "", "CEDULA_NIT": "", "CORREO": "", "TELEFONO": "" }
+    ];
+    const encabezados = Object.keys(datosPlantilla[0]);
+    const filasCSV = [encabezados.join(","), ...datosPlantilla.map(fila => encabezados.map(key => `"${fila[key]}"`).join(","))];
+    const csvContent = filasCSV.join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute("download", "plantilla_clientes.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    alert("✅ Plantilla descargada. Puedes abrirla con Excel. Completa los datos y guárdala como CSV.");
+};
     
     window.cargarExcelDatos = function() {
         const input = document.createElement('input');
