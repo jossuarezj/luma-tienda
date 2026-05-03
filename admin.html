@@ -544,110 +544,219 @@
     };
     
     window.descargarPlantillaExcel = function() {
-    const datosPlantilla = [
-        { "NOMBRE_COMPRADOR": "", "CEDULA_NIT": "", "CORREO": "", "TELEFONO": "" }
+    // Encabezados de la plantilla
+    const encabezados = [
+        "FECHA",
+        "NOMBRE_RAZON_SOCIAL",
+        "NIT_CEDULA",
+        "CORREO",
+        "DIRECCION",
+        "TELEFONO",
+        "CATEGORIA",
+        "REFERENCIA",
+        "TALLA",
+        "COLOR",
+        "CANTIDAD",
+        "PRECIO_UNITARIO"
     ];
-    const encabezados = Object.keys(datosPlantilla[0]);
-    const filasCSV = [encabezados.join(","), ...datosPlantilla.map(fila => encabezados.map(key => `"${fila[key]}"`).join(","))];
-    const csvContent = filasCSV.join("\n");
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    
+    // Fila de ejemplo (opcional)
+    const ejemplo = [
+        new Date().toLocaleDateString(),
+        "Ejemplo: María López",
+        "1234567890",
+        "ejemplo@email.com",
+        "Calle 123",
+        "3001234567",
+        "BODY",
+        "SERENA",
+        "S/M",
+        "NEGRO",
+        "2",
+        "49990"
+    ];
+    
+    // Crear filas: encabezados + ejemplo
+    const filas = [encabezados.join(","), ejemplo.map(v => `"${v}"`).join(",")];
+    const csvContent = filas.join("\n");
+    
+    // Descargar como .xls (Excel puede abrirlo)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "application/vnd.ms-excel" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
-    link.setAttribute("download", "plantilla_clientes.csv");
+    link.setAttribute("download", "plantilla_factura.xls");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    alert("✅ Plantilla descargada. Puedes abrirla con Excel. Completa los datos y guárdala como CSV.");
+    
+    alert("✅ Plantilla descargada. Abre con Excel, completa los datos (múltiples filas) y vuelve a cargar el archivo.");
 };
     
     window.cargarExcelDatos = function() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.csv, .xlsx';
-        input.onchange = (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const contenido = e.target.result;
-                const lineas = contenido.split('\n');
-                const encabezados = lineas[0].split(',').map(h => h.replace(/"/g, '').trim());
-                const datos = lineas.slice(1).filter(l => l.trim()).map(linea => {
-                    const valores = linea.split(',').map(v => v.replace(/"/g, '').trim());
-                    const obj = {};
-                    encabezados.forEach((h, idx) => obj[h] = valores[idx] || '');
-                    return obj;
-                });
-                if (datos.length === 0) { alert("❌ No se encontraron datos"); return; }
-                const cliente = datos[0];
-                document.getElementById('clienteNombre').value = cliente.NOMBRE_COMPRADOR || '';
-                document.getElementById('clienteCedula').value = cliente.CEDULA_NIT || '';
-                document.getElementById('clienteEmail').value = cliente.CORREO || '';
-                document.getElementById('clienteTelefono').value = cliente.TELEFONO || '';
-                alert(`✅ Datos cargados: ${cliente.NOMBRE_COMPRADOR || 'Sin nombre'}`);
-            };
-            reader.readAsText(file, 'UTF-8');
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv, .xls, .xlsx';
+    
+    input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const contenido = e.target.result;
+            const lineas = contenido.split('\n');
+            const encabezados = lineas[0].split(',').map(h => h.replace(/"/g, '').trim());
+            
+            // Mapear índices de columnas
+            const idxFecha = encabezados.findIndex(h => h.includes('FECHA'));
+            const idxNombre = encabezados.findIndex(h => h.includes('NOMBRE') || h.includes('RAZON'));
+            const idxNit = encabezados.findIndex(h => h.includes('NIT') || h.includes('CEDULA'));
+            const idxCorreo = encabezados.findIndex(h => h.includes('CORREO'));
+            const idxDireccion = encabezados.findIndex(h => h.includes('DIRECCION'));
+            const idxTelefono = encabezados.findIndex(h => h.includes('TELEFONO'));
+            const idxCategoria = encabezados.findIndex(h => h.includes('CATEGORIA'));
+            const idxReferencia = encabezados.findIndex(h => h.includes('REFERENCIA'));
+            const idxTalla = encabezados.findIndex(h => h.includes('TALLA'));
+            const idxColor = encabezados.findIndex(h => h.includes('COLOR'));
+            const idxCantidad = encabezados.findIndex(h => h.includes('CANTIDAD'));
+            const idxPrecio = encabezados.findIndex(h => h.includes('PRECIO'));
+            
+            // Procesar filas
+            const productos = [];
+            let datosComprador = {};
+            
+            for (let i = 1; i < lineas.length; i++) {
+                if (!lineas[i].trim()) continue;
+                const valores = lineas[i].split(',').map(v => v.replace(/"/g, '').trim());
+                
+                // Guardar datos del comprador (primer fila)
+                if (i === 1) {
+                    datosComprador = {
+                        nombre: valores[idxNombre] || '',
+                        nit: valores[idxNit] || '',
+                        correo: valores[idxCorreo] || '',
+                        direccion: valores[idxDireccion] || '',
+                        telefono: valores[idxTelefono] || '',
+                        fecha: valores[idxFecha] || new Date().toLocaleDateString()
+                    };
+                }
+                
+                // Guardar producto
+                if (valores[idxReferencia] && valores[idxReferencia].trim() !== '') {
+                    productos.push({
+                        categoria: valores[idxCategoria] || 'BODY',
+                        referencia: valores[idxReferencia],
+                        talla: valores[idxTalla] || 'S/M',
+                        color: valores[idxColor] || 'NEGRO',
+                        cantidad: parseInt(valores[idxCantidad]) || 1,
+                        precioUnitario: parseInt(valores[idxPrecio]) || 0
+                    });
+                }
+            }
+            
+            // Llenar campos del comprador en el modal
+            document.getElementById('clienteNombre').value = datosComprador.nombre;
+            document.getElementById('clienteCedula').value = datosComprador.nit;
+            document.getElementById('clienteEmail').value = datosComprador.correo;
+            document.getElementById('clienteTelefono').value = datosComprador.telefono;
+            document.getElementById('fechaFactura').value = datosComprador.fecha;
+            
+            // Guardar productos en variable global para el PDF
+            window.productosFactura = productos;
+            
+            alert(`✅ Cargados: ${productos.length} productos | Cliente: ${datosComprador.nombre}`);
+            
+            // Mostrar resumen de productos en consola
+            console.log("Productos cargados:", productos);
         };
-        input.click();
+        reader.readAsText(file, 'UTF-8');
     };
+    input.click();
+};
     
     window.generarFacturaPDF = function() {
-        const empresa = {
-            razon: document.getElementById('empresaRazon').value,
-            nit: document.getElementById('empresaNit').value,
-            direccion: document.getElementById('empresaDireccion').value || 'No aplica',
-            telefono: document.getElementById('empresaTelefono').value
-        };
-        const cliente = {
-            nombre: document.getElementById('clienteNombre').value,
-            cedula: document.getElementById('clienteCedula').value,
-            email: document.getElementById('clienteEmail').value,
-            telefono: document.getElementById('clienteTelefono').value
-        };
-        if (!cliente.nombre || !cliente.cedula) {
-            alert("❌ Completa los datos del comprador");
-            return;
-        }
-        const numeroFactura = 'FAC-' + Date.now();
-        const fecha = new Date().toLocaleDateString();
-        const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
-            body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
-            .factura-container { max-width: 800px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
-            .logo-area img { max-width: 120px; }
-            .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
-            .factura-info { text-align: right; }
-            .factura-info p { margin: 3px 0; font-size: 12px; color: #666; }
-            .factura-info h2 { color: #4d4845; margin: 0 0 5px; }
-            .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
-            .datos-cliente h3, .datos-empresa h3 { color: #4d4845; margin: 0 0 10px; font-size: 14px; }
-            .datos-cliente p, .datos-empresa p { margin: 5px 0; font-size: 12px; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }
-            th { background: #4d4845; color: white; }
-            .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
-            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
-        </style></head><body>
-            <div class="factura-container">
-                <div class="header"><div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div>
-                <div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${fecha}</p></div></div>
-                <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3><p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p>
-                <p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p></div>
-                <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p>
-                <p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p></div>
-                <table><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio Unitario</th><th>Subtotal</th></tr></thead>
-                <tbody><tr><td colspan="4" style="text-align:center;">Selecciona una venta en el panel</td></tr></tbody>
-                <div class="totales"><p><strong>TOTAL:</strong> $0</p></div>
-                <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div>
-            </div>
-        </body></html>`;
-        const ventana = window.open('', '_blank');
-        ventana.document.write(contenidoHTML);
-        ventana.document.close();
-        ventana.print();
+    const empresa = {
+        razon: document.getElementById('empresaRazon').value,
+        nit: document.getElementById('empresaNit').value,
+        direccion: document.getElementById('empresaDireccion').value || 'No aplica',
+        telefono: document.getElementById('empresaTelefono').value
     };
+    
+    const cliente = {
+        nombre: document.getElementById('clienteNombre').value,
+        cedula: document.getElementById('clienteCedula').value,
+        email: document.getElementById('clienteEmail').value,
+        telefono: document.getElementById('clienteTelefono').value,
+        fecha: document.getElementById('fechaFactura')?.value || new Date().toLocaleDateString()
+    };
+    
+    if (!cliente.nombre || !cliente.cedula) {
+        alert("❌ Completa los datos del comprador (Nombre y Cédula/NIT)");
+        return;
+    }
+    
+    const productos = window.productosFactura || [];
+    if (productos.length === 0) {
+        alert("❌ Carga primero un archivo Excel con productos");
+        return;
+    }
+    
+    // Calcular total
+    let subtotal = 0;
+    let productosHTML = '';
+    for (const p of productos) {
+        const totalProducto = p.cantidad * p.precioUnitario;
+        subtotal += totalProducto;
+        productosHTML += `<tr><td>${p.categoria}</td><td>${p.referencia}</td><td>${p.talla}</td><td>${p.color}</td><td>${p.cantidad}</td><td>$${p.precioUnitario.toLocaleString()}</td><td>$${totalProducto.toLocaleString()}</td></tr>`;
+    }
+    
+    const numeroFactura = 'FAC-' + Date.now();
+    
+    const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
+        body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
+        .factura-container { max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
+        .logo-area img { max-width: 120px; }
+        .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
+        .factura-info { text-align: right; }
+        .factura-info p { margin: 3px 0; font-size: 12px; color: #666; }
+        .factura-info h2 { color: #4d4845; margin: 0 0 5px; }
+        .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
+        .datos-cliente h3, .datos-empresa h3 { color: #4d4845; margin: 0 0 10px; font-size: 14px; }
+        .datos-cliente p, .datos-empresa p { margin: 5px 0; font-size: 12px; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 11px; }
+        th { background: #4d4845; color: white; }
+        .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
+    </style></head><body>
+        <div class="factura-container">
+            <div class="header">
+                <div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div>
+                <div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div>
+            </div>
+            <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3>
+                <p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p>
+                <p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p>
+            </div>
+            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3>
+                <p><strong>Nombre / Razón Social:</strong> ${cliente.nombre}</p><p><strong>Cédula / NIT:</strong> ${cliente.cedula}</p>
+                <p><strong>Correo electrónico:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p>
+            </div>
+            <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Color</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
+            <tbody>${productosHTML}</tbody>
+            <tfoot><tr><td colspan="6" style="text-align:right"><strong>TOTAL:</strong></td><td><strong>$${subtotal.toLocaleString()}</strong></td></tr></tfoot></table>
+            <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div>
+        </div>
+    </body></html>`;
+    
+    const ventana = window.open('', '_blank');
+    ventana.document.write(contenidoHTML);
+    ventana.document.close();
+    ventana.print();
+};
     </script>
     <!-- Modal Factura -->
     <div id="modalFactura" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
@@ -704,9 +813,12 @@
                             <label class="block text-xs font-semibold mb-1">Teléfono / Celular</label>
                             <input type="text" id="clienteTelefono" placeholder="Número de contacto" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
                         </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Fecha Factura</label>
+                            <input type="text" id="fechaFactura" value="${new Date().toLocaleDateString()}" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100">
+                        </div>
                     </div>
                 </div>
-                
                 <!-- Acciones -->
                 <div class="flex gap-3 pt-4 border-t">
                     <button onclick="descargarPlantillaExcel()" class="flex-1 bg-[#4d4845] text-white py-2 rounded-full text-sm font-semibold hover:bg-[#4a2e24] transition">
