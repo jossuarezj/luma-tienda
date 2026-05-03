@@ -402,15 +402,16 @@
     
     // ==================== FACTURACIÓN ====================
     
+        // ==================== FACTURACIÓN ====================
+    
     let productosFacturaTemp = [];
     
     window.abrirModalFactura = function() {
         document.getElementById('modalFactura').classList.remove('hidden');
         document.getElementById('modalFactura').classList.add('flex');
-        // Establecer fecha actual
-    const hoy = new Date();
-    const fechaFormateada = hoy.toLocaleDateString();
-    document.getElementById('fechaFactura').value = fechaFormateada;
+        const hoy = new Date();
+        const fechaFormateada = hoy.toLocaleDateString();
+        document.getElementById('fechaFactura').value = fechaFormateada;
     };
     
     window.cerrarModalFactura = function() {
@@ -436,39 +437,80 @@
         }
     };
     
-    window.seleccionarColorFactura = function(color) {
-        document.getElementById('facturaColor').value = color;
-        document.querySelectorAll('.colorFacturaBtn').forEach(btn => btn.classList.remove('ring-2', 'ring-[#7B7369]'));
-        if (event && event.target) event.target.classList.add('ring-2', 'ring-[#7B7369]');
+    window.agregarNuevoColor = function() {
+        const container = document.getElementById('coloresContainer');
+        const nuevoItem = document.createElement('div');
+        nuevoItem.className = 'color-item flex gap-2 items-center mt-2';
+        nuevoItem.innerHTML = `
+            <select class="colorSelect w-1/2 border rounded-xl px-3 py-2">
+                <option value="">Selecciona color</option>
+                <option value="MARFIL">MARFIL</option>
+                <option value="NEGRO">NEGRO</option>
+                <option value="COCOA">COCOA</option>
+                <option value="BEIGE">BEIGE</option>
+            </select>
+            <input type="number" class="cantidadColor w-1/3 border rounded-xl px-3 py-2" placeholder="Cantidad" min="1" value="1">
+            <button type="button" class="eliminarColorBtn text-red-500 hover:text-red-700 px-2">🗑️</button>
+        `;
+        container.appendChild(nuevoItem);
+        nuevoItem.querySelector('.eliminarColorBtn').addEventListener('click', function() { nuevoItem.remove(); });
     };
     
-    window.confirmarAgregarProductoFactura = function() {
-        const categoria = document.getElementById('facturaCategoria').value;
+    window.agregarProductoConColores = function() {
         const referencia = document.getElementById('facturaReferencia').value;
         const talla = document.getElementById('facturaTalla').value;
-        const color = document.getElementById('facturaColor').value;
-        const cantidad = parseInt(document.getElementById('facturaCantidad').value);
-        let precio = parseFloat(document.getElementById('facturaPrecio').value);
+        const precio = parseFloat(document.getElementById('facturaPrecio').value);
+        const categoria = document.getElementById('facturaCategoria').value;
         
         if (!referencia) { alert("❌ Selecciona una referencia"); return; }
         if (!talla) { alert("❌ Selecciona una talla"); return; }
-        if (!color) { alert("❌ Selecciona un color"); return; }
         if (isNaN(precio) || precio <= 0) { alert("❌ Ingresa un precio válido"); return; }
         
-        productosFacturaTemp.push({ categoria, referencia, talla, color, cantidad, precio });
+        const itemsColor = document.querySelectorAll('#coloresContainer .color-item');
+        let productosAgregados = 0;
+        
+        for (const item of itemsColor) {
+            const color = item.querySelector('.colorSelect').value;
+            const cantidad = parseInt(item.querySelector('.cantidadColor').value);
+            if (!color || cantidad <= 0) continue;
+            productosFacturaTemp.push({
+                categoria: categoria,
+                referencia: referencia,
+                talla: talla,
+                color: color,
+                cantidad: cantidad,
+                precio: precio
+            });
+            productosAgregados++;
+        }
+        
+        if (productosAgregados === 0) { alert("❌ Agrega al menos un color con cantidad"); return; }
+        
         window.actualizarListaProductosFactura();
         window.cerrarModalAgregarProducto();
         
         document.getElementById('facturaReferencia').value = '';
         document.getElementById('facturaTalla').value = '';
-        document.getElementById('facturaColor').value = '';
-        document.getElementById('facturaCantidad').value = '1';
         document.getElementById('facturaPrecio').value = '';
         document.querySelectorAll('.tallaFacturaBtn').forEach(btn => {
             btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
             btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');
         });
-        document.querySelectorAll('.colorFacturaBtn').forEach(btn => btn.classList.remove('ring-2', 'ring-[#7B7369]'));
+        
+        const container = document.getElementById('coloresContainer');
+        container.innerHTML = `<div class="color-item flex gap-2 items-center">
+            <select class="colorSelect w-1/2 border rounded-xl px-3 py-2">
+                <option value="">Selecciona color</option>
+                <option value="MARFIL">MARFIL</option>
+                <option value="NEGRO">NEGRO</option>
+                <option value="COCOA">COCOA</option>
+                <option value="BEIGE">BEIGE</option>
+            </select>
+            <input type="number" class="cantidadColor w-1/3 border rounded-xl px-3 py-2" placeholder="Cantidad" min="1" value="1">
+            <button type="button" class="eliminarColorBtn text-red-500 hover:text-red-700 px-2 hidden">🗑️</button>
+        </div>`;
+        
+        alert(`✅ ${productosAgregados} productos agregados (${referencia} - Talla ${talla})`);
     };
     
     window.actualizarListaProductosFactura = function() {
@@ -497,11 +539,26 @@
     window.agregarProductoFactura = function() {
         document.getElementById('facturaReferencia').value = '';
         document.getElementById('facturaTalla').value = '';
-        document.getElementById('facturaColor').value = '';
-        document.getElementById('facturaCantidad').value = '1';
         document.getElementById('facturaPrecio').value = '';
-        document.getElementById('modalAgregarProductoFactura').classList.remove('hidden');
-        document.getElementById('modalAgregarProductoFactura').classList.add('flex');
+        document.querySelectorAll('.tallaFacturaBtn').forEach(btn => {
+            btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
+            btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');
+        });
+        
+        const container = document.getElementById('coloresContainer');
+        if (container) {
+            container.innerHTML = `<div class="color-item flex gap-2 items-center">
+                <select class="colorSelect w-1/2 border rounded-xl px-3 py-2">
+                    <option value="">Selecciona color</option>
+                    <option value="MARFIL">MARFIL</option>
+                    <option value="NEGRO">NEGRO</option>
+                    <option value="COCOA">COCOA</option>
+                    <option value="BEIGE">BEIGE</option>
+                </select>
+                <input type="number" class="cantidadColor w-1/3 border rounded-xl px-3 py-2" placeholder="Cantidad" min="1" value="1">
+                <button type="button" class="eliminarColorBtn text-red-500 hover:text-red-700 px-2 hidden">🗑️</button>
+            </div>`;
+        }
         
         const selectReferencia = document.getElementById('facturaReferencia');
         if (selectReferencia) {
@@ -513,15 +570,19 @@
                 Object.keys(referenciasUnicas).forEach(ref => { selectReferencia.innerHTML += `<option value="${ref}">${ref}</option>`; });
             });
         }
+        
+        document.getElementById('modalAgregarProductoFactura').classList.remove('hidden');
+        document.getElementById('modalAgregarProductoFactura').classList.add('flex');
     };
     
-    window.generarFacturaPDF = function() {
+    window.guardarFacturaComoVenta = async function() {
         const empresa = {
             razon: document.getElementById('empresaRazon').value,
             nit: document.getElementById('empresaNit').value,
             direccion: document.getElementById('empresaDireccion').value || 'No aplica',
             telefono: document.getElementById('empresaTelefono').value
         };
+        
         const cliente = {
             nombre: document.getElementById('clienteNombre').value,
             cedula: document.getElementById('clienteCedula').value,
@@ -531,52 +592,114 @@
             fecha: document.getElementById('fechaFactura')?.value || new Date().toLocaleDateString()
         };
         
-        if (!cliente.nombre || !cliente.cedula) { alert("❌ Completa los datos del comprador"); return; }
-        if (productosFacturaTemp.length === 0) { alert("❌ Agrega al menos un producto"); return; }
-        
-        let subtotal = 0;
-        let productosHTML = '';
-        for (const p of productosFacturaTemp) {
-            const totalProducto = p.cantidad * p.precio;
-            subtotal += totalProducto;
-            productosHTML += `<tr><td class="border p-2">${p.categoria}</td><td class="border p-2">${p.referencia}</td><td class="border p-2">${p.talla}</td><td class="border p-2">${p.color} x${p.cantidad}</td><td class="border p-2 text-right">$${p.precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
+        if (!cliente.nombre || !cliente.cedula) {
+            alert("❌ Completa los datos del comprador");
+            return;
         }
         
-        const numeroFactura = 'FAC-' + Date.now();
-        const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
-            body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
-            .factura-container { max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
-            .logo-area img { max-width: 120px; }
-            .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
-            .factura-info { text-align: right; }
-            .factura-info p { margin: 3px 0; font-size: 12px; color: #666; }
-            .factura-info h2 { color: #4d4845; margin: 0 0 5px; }
-            .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
-            .datos-cliente h3, .datos-empresa h3 { color: #4d4845; margin: 0 0 10px; font-size: 14px; }
-            .datos-cliente p, .datos-empresa p { margin: 5px 0; font-size: 12px; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-            th { background: #4d4845; color: white; }
-            .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
-            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
-        </style></head><body>
-            <div class="factura-container"><div class="header"><div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa.razon}</h1></div><div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div></div>
-            <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3><p><strong>Razón Social:</strong> ${empresa.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa.nit}</p><p><strong>Dirección:</strong> ${empresa.direccion}</p><p><strong>Teléfono:</strong> ${empresa.telefono}</p></div>
-            <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p><p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p><p><strong>Dirección:</strong> ${cliente.direccion || 'No registrada'}</p></div>
-            <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Producto</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>${productosHTML}</tbody>
-            <tfoot><tr><td colspan="5" style="text-align:right"><strong>TOTAL:</strong></td><td class="text-right"><strong>$${subtotal.toLocaleString()}</strong></td></tr></tfoot></table>
-            <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa.razon} | ${empresa.telefono}</p></div></div>
-        </body></html>`;
+        if (productosFacturaTemp.length === 0) {
+            alert("❌ Agrega al menos un producto");
+            return;
+        }
         
-        const ventana = window.open('', '_blank');
-        ventana.document.write(contenidoHTML);
-        ventana.document.close();
-        ventana.print();
+        let subtotal = 0;
+        for (const p of productosFacturaTemp) {
+            subtotal += p.cantidad * p.precio;
+        }
+        
+        const ventaData = {
+            usuario: cliente.nombre,
+            email: cliente.email,
+            productos: productosFacturaTemp,
+            subtotal: subtotal,
+            descuento: 0,
+            envio: 0,
+            total: subtotal,
+            metodoPago: "factura",
+            datosEnvio: {
+                direccion: cliente.direccion,
+                ciudad: "No aplica",
+                telefono: cliente.telefono,
+                nombre: cliente.nombre,
+                apellido: "",
+                cedula: cliente.cedula,
+                tipoVivienda: "casa"
+            },
+            numeroPedido: 'FAC-' + Date.now(),
+            estadoEnvio: "confirmado",
+            fecha: new Date().toISOString(),
+            esFactura: true
+        };
+        
+        try {
+            const { guardarVentaFirestore } = await import('./js/firebase-ventas.js');
+            const ventaId = await guardarVentaFirestore(ventaData);
+            alert(`✅ Factura guardada como venta con ID: ${ventaId}`);
+            
+            // Generar PDF
+            const empresa2 = {
+                razon: document.getElementById('empresaRazon').value,
+                nit: document.getElementById('empresaNit').value,
+                direccion: document.getElementById('empresaDireccion').value || 'No aplica',
+                telefono: document.getElementById('empresaTelefono').value
+            };
+            
+            let subtotal2 = 0;
+            let productosHTML = '';
+            for (const p of productosFacturaTemp) {
+                const totalProducto = p.cantidad * p.precio;
+                subtotal2 += totalProducto;
+                productosHTML += `<tr><td class="border p-2">${p.categoria}</td><td class="border p-2">${p.referencia}</td><td class="border p-2">${p.talla}</td><td class="border p-2">${p.color} x${p.cantidad}</td><td class="border p-2 text-right">$${p.precio.toLocaleString()}</td><td class="border p-2 text-right">$${totalProducto.toLocaleString()}</td></tr>`;
+            }
+            
+            const numeroFactura = ventaData.numeroPedido;
+            const contenidoHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Factura LUMA</title><style>
+                body { font-family: 'Montserrat', 'Arial', sans-serif; margin: 0; padding: 40px; background: white; }
+                .factura-container { max-width: 900px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 30px; border-radius: 10px; }
+                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4d4845; padding-bottom: 20px; margin-bottom: 20px; }
+                .logo-area img { max-width: 120px; }
+                .logo-area h1 { color: #4d4845; margin: 5px 0 0; font-size: 20px; }
+                .factura-info { text-align: right; }
+                .datos-cliente, .datos-empresa { margin-bottom: 20px; padding: 15px; background: #f9f6f0; border-radius: 8px; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+                th { background: #4d4845; color: white; }
+                .totales { text-align: right; margin-top: 20px; padding-top: 10px; border-top: 2px solid #4d4845; }
+                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
+            </style></head><body>
+                <div class="factura-container"><div class="header"><div class="logo-area"><img src="https://i.postimg.cc/8zhRXqhj/L0G0-SIN-F0ND0-03.png" alt="LUMA Logo"><h1>${empresa2.razon}</h1></div><div class="factura-info"><h2>FACTURA</h2><p><strong>N°:</strong> ${numeroFactura}</p><p><strong>Fecha:</strong> ${cliente.fecha}</p></div></div>
+                <div class="datos-empresa"><h3>🏢 DATOS DE LA EMPRESA</h3><p><strong>Razón Social:</strong> ${empresa2.razon}</p><p><strong>NIT / Cédula:</strong> ${empresa2.nit}</p><p><strong>Dirección:</strong> ${empresa2.direccion}</p><p><strong>Teléfono:</strong> ${empresa2.telefono}</p></div>
+                <div class="datos-cliente"><h3>👤 DATOS DEL COMPRADOR</h3><p><strong>Nombre:</strong> ${cliente.nombre}</p><p><strong>Cédula/NIT:</strong> ${cliente.cedula}</p><p><strong>Email:</strong> ${cliente.email || 'No registrado'}</p><p><strong>Teléfono:</strong> ${cliente.telefono || 'No registrado'}</p><p><strong>Dirección:</strong> ${cliente.direccion || 'No registrada'}</p></div>
+                <table><thead><tr><th>Categoría</th><th>Referencia</th><th>Talla</th><th>Producto</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>${productosHTML}</tbody>
+                <tfoot><tr><td colspan="5" style="text-align:right"><strong>TOTAL:</strong></td><td class="text-right"><strong>$${subtotal2.toLocaleString()}</strong></td></tr></tfoot></table>
+                <div class="footer"><p>¡Gracias por tu compra!</p><p>${empresa2.razon} | ${empresa2.telefono}</p></div></div>
+            </body></html>`;
+            
+            const ventana = window.open('', '_blank');
+            ventana.document.write(contenidoHTML);
+            ventana.document.close();
+            ventana.print();
+            
+            window.cerrarModalFactura();
+            productosFacturaTemp = [];
+            window.actualizarListaProductosFactura();
+            await cargarVentas();
+        } catch (error) {
+            console.error("Error guardando factura:", error);
+            alert("❌ Error al guardar la factura");
+        }
+    };
+    
+    window.generarFacturaPDF = function() {
+        // Mantenemos la función original por compatibilidad
+        alert("Usa 'Guardar Factura' para generar el PDF");
     };
     
     document.getElementById('btnAgregarProductoFactura').addEventListener('click', window.agregarProductoFactura);
+    document.getElementById('agregarColorBtn').addEventListener('click', window.agregarNuevoColor);
 </script>
+
+
     <!-- Modal Factura -->
     <div id="modalFactura" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
         <div class="absolute inset-0 bg-black bg-opacity-60"></div>
@@ -654,17 +777,17 @@
                 </div>
                 
                 <div class="flex gap-3">
-                    <button onclick="generarFacturaPDF()" class="flex-1 btn-primary py-2 rounded-full text-sm font-semibold">
-                        <i class="fas fa-file-pdf mr-2"></i>Generar Factura PDF
-                    </button>
-                    <button onclick="cerrarModalFactura()" class="flex-1 border border-gray-300 rounded-full py-2 text-sm font-semibold">
+                    <button onclick="guardarFacturaComoVenta()" class="flex-1 btn-primary py-2 rounded-full text-sm font-semibold">
+                        <i class="fas fa-save mr-2"></i>Guardar Factura
+                        </button>
+                        <button onclick="cerrarModalFactura()" class="flex-1 border border-gray-300 rounded-full py-2 text-sm font-semibold">
                         Cancelar
                     </button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Modal para agregar producto a factura -->
+    <!-- Modal para agregar producto a factura (MEJORADO) -->
 <div id="modalAgregarProductoFactura" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
     <div class="absolute inset-0 bg-black bg-opacity-60"></div>
     <div class="relative bg-white rounded-3xl max-w-md w-full max-h-[85vh] overflow-y-auto p-6 z-10">
@@ -700,19 +823,23 @@
             </div>
             
             <div>
-                <label class="block text-sm font-semibold mb-1">Color</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <button type="button" onclick="seleccionarColorFactura('MARFIL')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#F5ECDC] text-[#4d4845]">MARFIL</button>
-                    <button type="button" onclick="seleccionarColorFactura('NEGRO')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#1A1A1A] text-white">NEGRO</button>
-                    <button type="button" onclick="seleccionarColorFactura('COCOA')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#99705D] text-white">COCOA</button>
-                    <button type="button" onclick="seleccionarColorFactura('BEIGE')" class="colorFacturaBtn py-2 rounded-xl border text-sm bg-[#DEC6A9] text-[#4d4845]">BEIGE</button>
+                <label class="block text-sm font-semibold mb-1">Colores y cantidades</label>
+                <div id="coloresContainer" class="space-y-2">
+                    <div class="color-item flex gap-2 items-center">
+                        <select class="colorSelect w-1/2 border rounded-xl px-3 py-2">
+                            <option value="">Selecciona color</option>
+                            <option value="MARFIL">MARFIL</option>
+                            <option value="NEGRO">NEGRO</option>
+                            <option value="COCOA">COCOA</option>
+                            <option value="BEIGE">BEIGE</option>
+                        </select>
+                        <input type="number" class="cantidadColor w-1/3 border rounded-xl px-3 py-2" placeholder="Cantidad" min="1" value="1">
+                        <button type="button" class="eliminarColorBtn text-red-500 hover:text-red-700 px-2 hidden">🗑️</button>
+                    </div>
                 </div>
-                <input type="hidden" id="facturaColor" value="">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-semibold mb-1">Cantidad</label>
-                <input type="number" id="facturaCantidad" value="1" min="1" class="w-full border rounded-xl px-3 py-2">
+                <button type="button" id="agregarColorBtn" class="mt-2 text-[#7B7369] text-sm hover:underline">
+                    <i class="fas fa-plus mr-1"></i> Agregar otro color
+                </button>
             </div>
             
             <div>
@@ -721,7 +848,7 @@
             </div>
             
             <div class="flex gap-3 pt-4">
-                <button onclick="confirmarAgregarProductoFactura()" class="flex-1 btn-primary py-2 rounded-full">Agregar</button>
+                <button onclick="agregarProductoConColores()" class="flex-1 btn-primary py-2 rounded-full">Agregar producto</button>
                 <button onclick="cerrarModalAgregarProducto()" class="flex-1 border border-gray-300 rounded-full py-2">Cancelar</button>
             </div>
         </div>
