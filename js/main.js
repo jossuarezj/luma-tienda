@@ -26,7 +26,29 @@ if (cuponAplicado) {
     const cupones = JSON.parse(localStorage.getItem('lumaCupones')) || {};
     cuponInfo = cupones[cuponAplicado] || null;
 }
-
+function calcularSubtotalElegible(itemsVisibles, cuponInfo) {
+    if (!cuponInfo) return 0;
+    
+    let itemsFiltrados = [];
+    
+    switch (cuponInfo.aplicaA) {
+        case "individuales":
+            itemsFiltrados = itemsVisibles.filter(item => !item.esPack);
+            break;
+        case "packs":
+            itemsFiltrados = itemsVisibles.filter(item => item.esPack);
+            break;
+        case "producto":
+            itemsFiltrados = itemsVisibles.filter(item => 
+                (item.ID === cuponInfo.productoId || item.id === cuponInfo.productoId) && !item.esPack
+            );
+            break;
+        default:
+            itemsFiltrados = itemsVisibles;
+    }
+    
+    return itemsFiltrados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+}
 // ==================== NOTIFICACIONES MODERNAS ====================
 
 function mostrarMensaje(mensaje, tipo = "error") {
@@ -966,26 +988,23 @@ function cerrarModalEnvio() {
 // ==================== CONFIRMACIÓN ANTES DE FINALIZAR (CORREGIDO) ====================
 
 function mostrarConfirmacionAntesDeFinalizar(datos) {
-    // ✅ CORREGIDO: Usar getCart() en lugar de cart
     const carritoActual = getCart();
     const itemsVisibles = carritoActual.filter(item => !item.esParteDePack);
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
     
     let descuento = 0;
     const user = getCurrentUser();
-    
-    // Verificar si hay productos individuales (NO packs)
     const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
     
-    // Verificar si el usuario ya usó el descuento (por email)
-    let descuentoYaUsado = false;
-    if (user && user.email) {
-        descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${user.email}`) === 'true';
-    }
-    
+    // Calcular descuento (misma lógica que en cart.js)
     if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        descuento = subtotal * (cuponInfo.valor / 100);
-    } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        if (cuponInfo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponInfo.valor / 100);
+        } else {
+            descuento = Math.min(cuponInfo.valor, subtotalElegible);
+        }
+    } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
         descuento = subtotal * 0.3;
     }
     
@@ -1025,7 +1044,7 @@ function mostrarConfirmacionAntesDeFinalizar(datos) {
                     ${datos.infoAdicional ? `<p class="text-sm text-gray-500 mt-1">Referencia: ${datos.infoAdicional}</p>` : ''}
                 </div>
                 
-                    <div class="bg-[#F5ECDC] border border-[#7B7369] rounded-xl p-3 mb-4">
+                <div class="bg-[#F5ECDC] border border-[#7B7369] rounded-xl p-3 mb-4">
                     <p class="text-sm text-[#4D4845] flex items-center gap-2">
                         <i class="fas fa-hand-holding-usd text-[#7B7369]"></i> 
                         <strong>Pago contra entrega</strong> - Pagarás en efectivo al recibir el pedido.
