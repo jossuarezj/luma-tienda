@@ -71,7 +71,7 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         // Verificar si hay productos individuales (NO packs)
         const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
         if (hayProductosIndividuales) {
-            descuento = subtotal * 0.3;
+            descuento = subtotal * 0.0;
             console.log(`💰 Descuento primera compra: ${descuento}`);
         }
     }

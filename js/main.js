@@ -914,8 +914,6 @@ window.agregarAlCarritoDesdeModal = function() {
 
 // ==================== MODAL DE ENVÍO (CORREGIDO) ====================
 
-// ==================== MODAL DE ENVÍO (CORREGIDO) ====================
-
 async function abrirModalEnvio() {
     const datosGuardados = getDatosEnvioGuardados();
     
@@ -973,6 +971,16 @@ async function abrirModalEnvio() {
     const envioGratisCalc = subtotal >= 99990;
     const envio = envioGratisCalc ? 0 : 17500;
     const total = subtotal - descuento + envio;
+
+      // Mostrar descuento si aplica
+    const descuentoRow = document.getElementById('resumenDescuentoRow');
+    const descuentoElem = document.getElementById('resumenDescuento');
+    if (descuento > 0) {
+        if (descuentoElem) descuentoElem.innerText = `-$${descuento.toLocaleString()}`;
+        if (descuentoRow) descuentoRow.classList.remove('hidden');
+    } else {
+        if (descuentoRow) descuentoRow.classList.add('hidden');
+    }
     
     document.getElementById('resumenSubtotal').innerText = `$${subtotal.toLocaleString()}`;
     document.getElementById('resumenEnvio').innerText = envio === 0 ? 'GRATIS' : `$${envio.toLocaleString()}`;
