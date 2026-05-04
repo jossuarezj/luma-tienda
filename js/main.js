@@ -997,6 +997,12 @@ async function abrirModalEnvio() {
     }, 300);
 }
 
+function cerrarModalEnvio() {
+    document.getElementById('modalEnvio').classList.add('hidden');
+    document.getElementById('modalEnvio').classList.remove('flex');
+    const mapaContainer = document.getElementById('mapaContainer');
+    if (mapaContainer) mapaContainer.classList.add('hidden');
+}
 // ==================== CONFIRMACIÓN ANTES DE FINALIZAR (CORREGIDA) ====================
 
 async function mostrarConfirmacionAntesDeFinalizar(datos) {
