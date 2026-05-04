@@ -963,9 +963,6 @@ async function abrirModalEnvio() {
             descuento = Math.min(cuponActivo.valor, subtotalElegible);
         }
         console.log(`💰 Descuento contraentrega: ${descuento}`);
-    } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
-        descuento = subtotal * 0.0;
-        console.log(`💰 Descuento primera compra contraentrega: ${descuento}`);
     }
     
     const envioGratisCalc = subtotal >= 99990;
@@ -1047,9 +1044,6 @@ async function mostrarConfirmacionAntesDeFinalizar(datos) {
             descuento = Math.min(cuponActivo.valor, subtotalElegible);
         }
         console.log(`💰 Descuento en confirmación: ${descuento}`);
-    } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
-        descuento = subtotal * 0.3;
-        console.log(`💰 Descuento primera compra en confirmación: ${descuento}`);
     }
     
     const envioGratisCalc = subtotal >= 99990;
@@ -1134,7 +1128,6 @@ window.confirmarPedidoFinal = async function(datosStr) {
     
     // Marcar descuento de primera compra si aplica (solo si no se usó cupón)
     if (!usedCoupon && user && user.email && hayProductosIndividuales) {
-        console.log('✅ Guardando descuento para:', user.email);
         localStorage.setItem(`luma_descuento_usado_${user.email}`, 'true');
         usedCoupon = true;
         localStorage.setItem('lumaCouponUsed', 'true');
@@ -1173,8 +1166,6 @@ window.confirmarPedidoFinal = async function(datosStr) {
                 } else {
                     descuento = Math.min(cuponActivo.valor, subtotalElegible);
                 }
-            } else if (userEmail && hayProductosIndividuales2 && !descuentoYaUsado && !usedCoupon) {
-                descuento = subtotal * 0.3;
             }
             
             const envioGratis = subtotal >= 99990;

@@ -67,13 +67,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
             descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
         console.log(`💰 Descuento aplicado: ${descuento} (cupón ${cuponInfo.codigo} - ${cuponInfo.valor}% sobre $${subtotalElegible})`);
-    } else if (user.primeraCompra && !usedCoupon) {
-        // Verificar si hay productos individuales (NO packs)
-        const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
-        if (hayProductosIndividuales) {
-            descuento = subtotal * 0.0;
-            console.log(`💰 Descuento primera compra: ${descuento}`);
-        }
     }
     
     // Calcular envío

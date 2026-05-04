@@ -92,17 +92,15 @@ export function updateCartUI() {
         const hayProductosIndividuales = subtotalIndividuales > 0;
 
         if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-    // Calcular subtotal elegible según el tipo de cupón
-    const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
         if (cuponInfo.tipo === "porcentaje") {
             descuento = subtotalElegible * (cuponInfo.valor / 100);
         } else {
-            // Descuento fijo (monto)
             descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
-        } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
-            descuento = subtotal * 0.3;
-        }
+    } else {
+        descuento = 0;   // ← Sin descuento automático
+    }
     
     // Calcular envío (gratis si subtotal >= umbral)
     envioGratis = subtotal >= UMBRAL_ENVIO_GRATIS;
@@ -325,8 +323,8 @@ export function addPackToCart(packData) {
         } else {
             descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
-    } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
-        descuento = subtotal * 0.3;
+    } else {
+        descuento = 0;   // ← Sin descuento automático
     }
     
     const total = subtotal - descuento + costoEnvio;
@@ -365,8 +363,8 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
         } else {
             descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
-    } else if (user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
-        descuento = subtotal * 0.3;
+    } else {
+        descuento = 0;   // ← Sin descuento automático
     }
 
     console.log("🏷️ Descuento:", descuento);
