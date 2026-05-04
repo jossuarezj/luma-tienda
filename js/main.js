@@ -964,7 +964,7 @@ async function abrirModalEnvio() {
         }
         console.log(`💰 Descuento contraentrega: ${descuento}`);
     } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
-        descuento = subtotal * 0.3;
+        descuento = subtotal * 0.0;
         console.log(`💰 Descuento primera compra contraentrega: ${descuento}`);
     }
     
@@ -1552,8 +1552,9 @@ function inicializarCarrusel() {
     
     console.log(`🔄 Inicializando carrusel con ${slides.length} slides`);
     
-    // Actualizar carruselItems con los slides actuales
-    const carruselItems = Array.from(slides);
+    let startX = 0;
+    let currentTranslate = 0;
+    let isDragging = false;
     
     function actualizarCarrusel() {
         if (window.innerWidth >= 768) {
@@ -1564,34 +1565,64 @@ function inicializarCarrusel() {
         const slideWidth = slides[0].offsetWidth;
         const desplazamiento = carruselIndex * slideWidth;
         track.style.transform = `translateX(-${desplazamiento}px)`;
+        currentTranslate = -desplazamiento;
     }
     
+    // Eventos táctiles para swipe
+    track.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+        track.style.transition = 'none';
+    });
+    
+    track.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+        let newTranslate = currentTranslate + diff;
+        // Limitar el desplazamiento para que no se salga
+        const maxTranslate = -(slides.length - 2) * slides[0].offsetWidth;
+        if (newTranslate > 0) newTranslate = 0;
+        if (newTranslate < maxTranslate) newTranslate = maxTranslate;
+        track.style.transform = `translateX(${newTranslate}px)`;
+    });
+    
+    track.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        track.style.transition = 'transform 0.3s ease';
+        const slideWidth = slides[0].offsetWidth;
+        const finalTranslate = parseFloat(track.style.transform.replace('translateX(', '')) || 0;
+        let newIndex = Math.round(-finalTranslate / slideWidth);
+        if (newIndex < 0) newIndex = 0;
+        if (newIndex > slides.length - 2) newIndex = slides.length - 2;
+        carruselIndex = newIndex;
+        actualizarCarrusel();
+    });
+    
+    // Botones: mantenerlos pero opcionalmente ocultarlos en móvil (ya los oculta CSS)
     const prevBtn = document.getElementById('carruselPrev');
     const nextBtn = document.getElementById('carruselNext');
     
     if (prevBtn) {
-        // Remover event listeners anteriores para evitar duplicados
         const newPrevBtn = prevBtn.cloneNode(true);
         prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
         newPrevBtn.onclick = () => {
             if (carruselIndex > 0) {
                 carruselIndex--;
                 actualizarCarrusel();
-                console.log("⬅️ Anterior, índice:", carruselIndex);
             }
         };
     }
     
     if (nextBtn) {
-        // Remover event listeners anteriores
         const newNextBtn = nextBtn.cloneNode(true);
         nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
         newNextBtn.onclick = () => {
-            const maxIndex = carruselItems.length - 2;
+            const maxIndex = slides.length - 2;
             if (carruselIndex < maxIndex) {
                 carruselIndex++;
                 actualizarCarrusel();
-                console.log("➡️ Siguiente, índice:", carruselIndex);
             }
         };
     }

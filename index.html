@@ -232,9 +232,18 @@
 
         /* Para móvil, reducir la altura */
         @media (max-width: 640px) {
-        .product-card .relative.h-80 {
-        height: 250px;
-        }
+            .product-card .relative.h-80 {
+                height: 200px;  /* antes 250px */
+            }
+            .product-card .p-5 {
+                padding: 12px;  /* reduce padding interior */
+            }
+            .product-card h3 {
+                font-size: 14px;
+            }
+            .product-card .text-xl {
+                font-size: 16px;
+            }
         }
 
         /* Para tablet */
