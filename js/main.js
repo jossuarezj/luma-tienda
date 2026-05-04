@@ -914,7 +914,9 @@ window.agregarAlCarritoDesdeModal = function() {
 
 // ==================== MODAL DE ENVÍO (CORREGIDO) ====================
 
-function abrirModalEnvio() {
+// ==================== MODAL DE ENVÍO (CORREGIDO) ====================
+
+async function abrirModalEnvio() {
     const datosGuardados = getDatosEnvioGuardados();
     
     if (datosGuardados) {
@@ -928,13 +930,20 @@ function abrirModalEnvio() {
         document.getElementById('envioInfoAdicional').value = datosGuardados.infoAdicional || '';
     }
       
-// ✅ CORREGIDO: Usar getCart() en lugar de cart
     const carritoActual = getCart();
     const itemsVisibles = carritoActual.filter(item => !item.esParteDePack);
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
     
     let descuento = 0;
     const user = getCurrentUser();
+    
+    // 1. Intentar obtener el cupón guardado (de la misma forma que en epayco.js)
+    let cuponActivo = null;
+    const cuponGuardado = localStorage.getItem('luma_current_coupon');
+    if (cuponGuardado) {
+        cuponActivo = JSON.parse(cuponGuardado);
+        console.log("✅ Cupón recuperado en abrirModalEnvio:", cuponActivo);
+    }
     
     // Verificar si hay productos individuales (NO packs)
     const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
@@ -945,10 +954,20 @@ function abrirModalEnvio() {
         descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${user.email}`) === 'true';
     }
     
-    if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        descuento = subtotal * (cuponInfo.valor / 100);
+    if (cuponActivo && (!cuponActivo.usosPorUsuario || !cuponActivo.usosPorUsuario.includes(user?.email))) {
+        // Calcular subtotal elegible según la regla del cupón
+        const { calcularSubtotalElegible } = await import('./cart.js');
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponActivo);
+        
+        if (cuponActivo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponActivo.valor / 100);
+        } else {
+            descuento = Math.min(cuponActivo.valor, subtotalElegible);
+        }
+        console.log(`💰 Descuento contraentrega: ${descuento}`);
     } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
         descuento = subtotal * 0.3;
+        console.log(`💰 Descuento primera compra contraentrega: ${descuento}`);
     }
     
     const envioGratisCalc = subtotal >= 99990;
@@ -978,16 +997,9 @@ function abrirModalEnvio() {
     }, 300);
 }
 
-function cerrarModalEnvio() {
-    document.getElementById('modalEnvio').classList.add('hidden');
-    document.getElementById('modalEnvio').classList.remove('flex');
-    const mapaContainer = document.getElementById('mapaContainer');
-    if (mapaContainer) mapaContainer.classList.add('hidden');
-}
+// ==================== CONFIRMACIÓN ANTES DE FINALIZAR (CORREGIDA) ====================
 
-// ==================== CONFIRMACIÓN ANTES DE FINALIZAR (CORREGIDO) ====================
-
-function mostrarConfirmacionAntesDeFinalizar(datos) {
+async function mostrarConfirmacionAntesDeFinalizar(datos) {
     const carritoActual = getCart();
     const itemsVisibles = carritoActual.filter(item => !item.esParteDePack);
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
@@ -996,16 +1008,34 @@ function mostrarConfirmacionAntesDeFinalizar(datos) {
     const user = getCurrentUser();
     const hayProductosIndividuales = itemsVisibles.some(item => !item.esPack);
     
-    // Calcular descuento (misma lógica que en cart.js)
-    if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
-        if (cuponInfo.tipo === "porcentaje") {
-            descuento = subtotalElegible * (cuponInfo.valor / 100);
+    // 🔥 OBTENER CUPÓN DESDE localStorage (igual que en abrirModalEnvio)
+    let cuponActivo = null;
+    const cuponGuardado = localStorage.getItem('luma_current_coupon');
+    if (cuponGuardado) {
+        cuponActivo = JSON.parse(cuponGuardado);
+        console.log("✅ Cupón recuperado en mostrarConfirmacionAntesDeFinalizar:", cuponActivo);
+    }
+    
+    // Verificar si el usuario ya usó el descuento por email
+    let descuentoYaUsado = false;
+    if (user && user.email) {
+        descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${user.email}`) === 'true';
+    }
+    
+    if (cuponActivo && (!cuponActivo.usosPorUsuario || !cuponActivo.usosPorUsuario.includes(user?.email))) {
+        // Calcular subtotal elegible según la regla del cupón
+        const { calcularSubtotalElegible } = await import('./cart.js');
+        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponActivo);
+        
+        if (cuponActivo.tipo === "porcentaje") {
+            descuento = subtotalElegible * (cuponActivo.valor / 100);
         } else {
-            descuento = Math.min(cuponInfo.valor, subtotalElegible);
+            descuento = Math.min(cuponActivo.valor, subtotalElegible);
         }
-    } else if (user && user.primeraCompra && !usedCoupon && hayProductosIndividuales) {
+        console.log(`💰 Descuento en confirmación: ${descuento}`);
+    } else if (user && hayProductosIndividuales && !descuentoYaUsado && !usedCoupon) {
         descuento = subtotal * 0.3;
+        console.log(`💰 Descuento primera compra en confirmación: ${descuento}`);
     }
     
     const envioGratisCalc = subtotal >= 99990;
@@ -1067,7 +1097,7 @@ window.cerrarModalConfirmacionPrevia = function() {
     if (modal) modal.remove();
 };
 
-window.confirmarPedidoFinal = function(datosStr) {
+window.confirmarPedidoFinal = async function(datosStr) {
     const datos = JSON.parse(datosStr);
     cerrarModalConfirmacionPrevia();
     guardarDatosEnvio(datos);
@@ -1088,12 +1118,17 @@ window.confirmarPedidoFinal = function(datosStr) {
     console.log('🔍 itemsNormales:', itemsNormales);
     console.log('🔍 hayProductosIndividuales:', hayProductosIndividuales);
     
+    // Marcar descuento de primera compra si aplica (solo si no se usó cupón)
     if (!usedCoupon && user && user.email && hayProductosIndividuales) {
         console.log('✅ Guardando descuento para:', user.email);
         localStorage.setItem(`luma_descuento_usado_${user.email}`, 'true');
         usedCoupon = true;
         localStorage.setItem('lumaCouponUsed', 'true');
     }
+    
+    // ✅ LIMPIAR CUPÓN APLICADO (tanto el código como el objeto completo)
+    localStorage.removeItem('cuponAplicado');
+    localStorage.removeItem('luma_current_coupon');
     
     // Enviar correo de confirmación
     (async () => {
@@ -1111,8 +1146,19 @@ window.confirmarPedidoFinal = function(datosStr) {
                 descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${userEmail.email}`) === 'true';
             }
             
-            if (cuponAplicado && cuponInfo && !cuponInfo.usado) {
-                descuento = subtotal * (cuponInfo.valor / 100);
+            // Volver a calcular descuento (podría haberse aplicado cupón o primera compra)
+            let cuponActivo = null;
+            const cuponGuardado = localStorage.getItem('luma_current_coupon'); // ya se eliminó, pero por si acaso
+            if (cuponGuardado) cuponActivo = JSON.parse(cuponGuardado);
+            
+            if (cuponActivo && (!cuponActivo.usosPorUsuario || !cuponActivo.usosPorUsuario.includes(userEmail?.email))) {
+                const { calcularSubtotalElegible } = await import('./cart.js');
+                const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponActivo);
+                if (cuponActivo.tipo === "porcentaje") {
+                    descuento = subtotalElegible * (cuponActivo.valor / 100);
+                } else {
+                    descuento = Math.min(cuponActivo.valor, subtotalElegible);
+                }
             } else if (userEmail && hayProductosIndividuales2 && !descuentoYaUsado && !usedCoupon) {
                 descuento = subtotal * 0.3;
             }
@@ -1130,10 +1176,10 @@ window.confirmarPedidoFinal = function(datosStr) {
             
             const datosCorreo = {
                 nombre: datos.nombre,
-                email: userActual?.email || 'cliente@email.com',
+                email: user?.email || 'cliente@email.com',   // ✅ CORREGIDO: user (no userActual)
                 numeroPedido: numeroPedido,
                 subtotal: subtotal,
-                descuento: descuento,  // ← AGREGAR
+                descuento: descuento,
                 costoEnvio: costoEnvio,
                 envioGratis: envioGratis,
                 total: total,
