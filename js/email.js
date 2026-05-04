@@ -9,36 +9,22 @@ export async function enviarCorreoConfirmacion(datosCompra) {
     // Verificar dónde están los productos
     let productosArray = datosCompra.productos || [];
     
-    console.log("📦 Productos array:", productosArray);
-    
     if (productosArray.length === 0 && datosCompra.itemsParaGuardar) {
         productosArray = datosCompra.itemsParaGuardar;
     }
     
     if (productosArray.length > 0) {
         for (const p of productosArray) {
-            console.log("📦 Procesando producto:", p);
-            
-            // Obtener nombre (probar todas las opciones posibles)
             const nombre = p.nombre || p.NOMBRE || p.nombreProducto || p.name || 'Producto';
-            
-            // Obtener color
             const color = p.colorNombre || p.COLORNOMBRE || p.color || '';
-            
-            // Obtener talla
             const talla = p.talla || p.TALLA || '';
-            
-            // Obtener cantidad
             const cantidad = p.cantidad || 1;
-            
-            // Obtener precio
             let precio = p.precio || p.PRECIO || 0;
             
-            // Si es un pack con productos incluidos
             if (p.esPack && p.productosIncluidosDetalle && p.productosIncluidosDetalle.length > 0) {
                 productosHTML += `
-                    <div style="margin-bottom: 15px; padding: 10px; background: #E8DCCC; border-radius: 12px;">
-                        <p style="font-weight: bold; margin-bottom: 8px;">📦 ${nombre}</p>
+                    <div style="margin-bottom:15px;padding:10px;background:#E8DCCC;border-radius:12px;">
+                        <p style="font-weight:bold;margin-bottom:8px;">📦 ${nombre}</p>
                 `;
                 for (const detalle of p.productosIncluidosDetalle) {
                     const detalleNombre = detalle.nombre || detalle.NOMBRE || 'Producto';
@@ -46,7 +32,7 @@ export async function enviarCorreoConfirmacion(datosCompra) {
                     const detalleTalla = detalle.talla || '';
                     const detalleCantidad = detalle.cantidad || 1;
                     productosHTML += `
-                        <div style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid #D7C9B2;">
+                        <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid #D7C9B2;">
                             <span>• ${detalleNombre} ${detalleColor} ${detalleTalla ? `(Talla ${detalleTalla})` : ''}</span>
                             <span>x${detalleCantidad}</span>
                         </div>
@@ -54,11 +40,11 @@ export async function enviarCorreoConfirmacion(datosCompra) {
                 }
                 productosHTML += `</div>`;
             } else {
-                // Producto normal
+                const subtotalProducto = precio * cantidad;
                 productosHTML += `
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #D7C9B2;">
-                        <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''}</span>
-                        <span>x${cantidad} - $${(precio * cantidad).toLocaleString()}</span>
+                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #D7C9B2;">
+                        <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
+                        <span>$${subtotalProducto.toLocaleString()}</span>
                     </div>
                 `;
             }
@@ -67,10 +53,12 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         productosHTML = '<p>No hay productos registrados</p>';
     }
     
+    // Eliminar saltos de línea excesivos para evitar corrupción en EmailJS
+    productosHTML = productosHTML.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+    
     // Obtener dirección de envío
     let direccion = 'No especificada';
     let ciudad = 'No especificada';
-    
     if (datosCompra.datosEnvio) {
         direccion = datosCompra.datosEnvio.direccion || direccion;
         ciudad = datosCompra.datosEnvio.ciudad || ciudad;
@@ -79,22 +67,43 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad = datosCompra.ciudad || ciudad;
     }
     
-    // Preparar los parámetros para EmailJS
+    // Obtener valores numéricos (sin formato de moneda)
+    const subtotalNum = Number(datosCompra.subtotal) || 0;
+    const descuentoNum = Number(datosCompra.descuento) || 0;
+    let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
+    if (datosCompra.envioGratis) costoEnvioNum = 0;
+    const totalNum = Number(datosCompra.total) || 0;
+    
+    // Formatear moneda para mostrar (como string)
+    const subtotalFormateado = `$${subtotalNum.toLocaleString()}`;
+    const descuentoFormateado = descuentoNum > 0 ? `-$${descuentoNum.toLocaleString()}` : '';
+    const envioFormateado = datosCompra.envioGratis ? 'GRATIS' : `$${costoEnvioNum.toLocaleString()}`;
+    const totalFormateado = `$${totalNum.toLocaleString()}`;
+    
+    // Construir parámetros para EmailJS
     const templateParams = {
+        email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: datosCompra.nombre || datosCompra.usuario || datosCompra.nombreCliente || 'Cliente',
         numeroPedido: datosCompra.numeroPedido || 'LUMA-' + Date.now(),
-        subtotal: datosCompra.subtotal ? datosCompra.subtotal.toLocaleString() : '0',
-        descuento: datosCompra.descuento ? datosCompra.descuento.toLocaleString() : '0',
-        costoEnvio: datosCompra.envioGratis ? 'GRATIS' : `$${(datosCompra.costoEnvio || 0).toLocaleString()}`,
-        total: datosCompra.total ? datosCompra.total.toLocaleString() : '0',
+        subtotal: subtotalFormateado,
+        descuento: descuentoFormateado,   // string vacío si no hay descuento
+        costoEnvio: envioFormateado,
+        total: totalFormateado,
         metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta de crédito (ePayco)' : 'Contra entrega (efectivo)',
         direccion: direccion,
         ciudad: ciudad,
-        productos: productosHTML,
-        email_cliente: datosCompra.email || 'cliente@email.com'
+        productos: productosHTML
     };
     
-    console.log("📧 Template params:", templateParams);
+    // Verificar que ningún valor sea undefined o null
+    Object.keys(templateParams).forEach(key => {
+        if (templateParams[key] === undefined || templateParams[key] === null) {
+            templateParams[key] = '';
+            console.warn(`⚠️ La variable ${key} estaba vacía, se reemplazó por string vacío`);
+        }
+    });
+    
+    console.log("📧 Template params finales (enviados a EmailJS):", JSON.stringify(templateParams, null, 2));
     
     try {
         const response = await emailjs.send('service_nfns0rk', 'template_0x1dgor', templateParams);
@@ -102,6 +111,7 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         return true;
     } catch (error) {
         console.error('❌ Error al enviar correo:', error);
+        console.error('Detalle del error:', error.text);
         return false;
     }
 }
