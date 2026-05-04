@@ -43,6 +43,11 @@ export async function cerrarSesion() {
         await signOut(auth);
         localStorage.removeItem('lumaUser');
         localStorage.removeItem('lumaCart');
+        // 🔥 Limpiar datos de cupones al cerrar sesión
+        localStorage.removeItem('cuponAplicado');
+        localStorage.removeItem('luma_current_coupon');
+        localStorage.removeItem('lumaCouponUsed');
+        localStorage.removeItem('luma_descuento_usado_*'); // opcional, pero puedes limpiar todas las claves que empiecen así
         document.getElementById('userName').innerText = 'Invitado';
         window.location.reload();
     } catch (error) { console.error(error); }

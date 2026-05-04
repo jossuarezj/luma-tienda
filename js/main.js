@@ -1459,6 +1459,43 @@ if (confirmarPackBtn) {
 async function iniciarLUMA() {
     console.log("🔄 Iniciando LUMA...");
     
+    // 🔥 Limpiar datos residuales de cupones (para evitar descuentos fantasmas)
+    const usuarioActual = getCurrentUser();
+    if (!usuarioActual) {
+        // Si no hay usuario logueado, eliminamos cualquier cupón residual
+        localStorage.removeItem('cuponAplicado');
+        localStorage.removeItem('luma_current_coupon');
+        localStorage.removeItem('lumaCouponUsed');
+    } else {
+        // Si hay usuario, verificamos si el cupón guardado corresponde a un cupón real y no expirado
+        const cuponGuardado = localStorage.getItem('luma_current_coupon');
+        if (cuponGuardado) {
+            try {
+                const cupon = JSON.parse(cuponGuardado);
+                // Validar fechas (si existe fechaFin)
+                const hoy = new Date();
+                let fechaFin = cupon.fechaFin;
+                if (fechaFin) {
+                    // Convertir si es objeto Timestamp de Firestore
+                    if (typeof fechaFin.toDate === 'function') {
+                        fechaFin = fechaFin.toDate();
+                    } else {
+                        fechaFin = new Date(fechaFin);
+                    }
+                    if (hoy > fechaFin) {
+                        // Cupón expirado, lo eliminamos
+                        localStorage.removeItem('cuponAplicado');
+                        localStorage.removeItem('luma_current_coupon');
+                    }
+                }
+            } catch(e) {
+                // Si hay error al parsear, eliminar por seguridad
+                localStorage.removeItem('cuponAplicado');
+                localStorage.removeItem('luma_current_coupon');
+            }
+        }
+    }
+    
     // Esperar a que los productos se carguen desde Firestore
     await actualizarProductos();
     
