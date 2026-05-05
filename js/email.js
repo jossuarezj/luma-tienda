@@ -1,12 +1,11 @@
 // js/email.js
 export async function enviarCorreoConfirmacion(datosCompra) {
-    console.log("📧 Enviando correo de confirmación...");
-    console.log("📦 Datos de compra:", datosCompra);
+    console.log("📧 Enviando correo...", datosCompra);
 
-    // Función para escapar caracteres HTML peligrosos
+    // Escape básico para evitar corrupción
     function escapeHtml(str) {
         if (!str) return '';
-        return str
+        return String(str)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -16,10 +15,9 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             .replace(/\s+/g, ' ');
     }
 
-    // 1. Construir productosHTML sanitizado
+    // Construir productosHTML
     let productosHTML = '';
     const productosArray = datosCompra.productos || [];
-
     if (productosArray.length === 0) {
         productosHTML = '<p>No hay productos registrados</p>';
     } else {
@@ -28,24 +26,20 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             const color = escapeHtml(p.colorNombre || p.COLORNOMBRE || p.color || '');
             const talla = escapeHtml(p.talla || '');
             const cantidad = p.cantidad || 1;
-            let precio = p.precio || p.PRECIO || 0;
+            const precio = p.precio || p.PRECIO || 0;
             const subtotalProducto = precio * cantidad;
-
             productosHTML += `
-                <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #D7C9B2;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #D7C9B2;padding:10px 0;">
                     <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
                     <span>$${subtotalProducto.toLocaleString()}</span>
                 </div>
             `;
         }
     }
-
-    // Eliminar saltos de línea y espacios redundantes (por si acaso)
     productosHTML = productosHTML.replace(/\n/g, '').replace(/\s{2,}/g, ' ');
 
-    // 2. Obtener dirección
-    let direccion = 'No especificada';
-    let ciudad = 'No especificada';
+    // Dirección
+    let direccion = 'No especificada', ciudad = 'No especificada';
     if (datosCompra.datosEnvio) {
         direccion = escapeHtml(datosCompra.datosEnvio.direccion) || direccion;
         ciudad = escapeHtml(datosCompra.datosEnvio.ciudad) || ciudad;
@@ -54,26 +48,25 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad = escapeHtml(datosCompra.ciudad) || ciudad;
     }
 
-    // 3. Valores numéricos y formateo SEGURO para EmailJS
+    // Números
     const subtotalNum = Number(datosCompra.subtotal) || 0;
     const descuentoNum = Number(datosCompra.descuento) || 0;
     let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
     if (datosCompra.envioGratis) costoEnvioNum = 0;
     const totalNum = Number(datosCompra.total) || 0;
 
-    // Formato para mostrar en el correo (con separadores de miles)
+    // Formato para mostrar (sin caracteres extraños)
     const subtotalStr = `$${subtotalNum.toLocaleString()}`;
-    const descuentoStr = descuentoNum > 0 ? `-$${descuentoNum.toLocaleString()}` : '';
+    const descuentoStr = descuentoNum > 0 ? `$${descuentoNum.toLocaleString()}` : '';
     const envioStr = datosCompra.envioGratis ? 'GRATIS' : `$${costoEnvioNum.toLocaleString()}`;
     const totalStr = `$${totalNum.toLocaleString()}`;
 
-    // 4. Construir parámetros para EmailJS (todos como strings planos)
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: escapeHtml(datosCompra.nombre || datosCompra.usuario || 'Cliente'),
         numeroPedido: escapeHtml(datosCompra.numeroPedido || `LUMA-${Date.now()}`),
         subtotal: subtotalStr,
-        descuento: descuentoStr,   // string vacío si no hay descuento
+        descuento: descuentoStr,
         costoEnvio: envioStr,
         total: totalStr,
         metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta de crédito (ePayco)' : 'Contra entrega (efectivo)',
@@ -82,15 +75,12 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         productos: productosHTML
     };
 
-    // Verificar que ningún parámetro sea undefined o null
-    for (const key in templateParams) {
-        if (templateParams[key] === undefined || templateParams[key] === null) {
-            templateParams[key] = '';
-            console.warn(`⚠️ Variable ${key} estaba vacía, se reemplazó por string vacío`);
-        }
-    }
+    // Reemplazar undefined/null por string vacío
+    Object.keys(templateParams).forEach(k => {
+        if (templateParams[k] === undefined || templateParams[k] === null) templateParams[k] = '';
+    });
 
-    console.log("📧 Enviando a EmailJS:", templateParams);
+    console.log("📧 Parámetros enviados:", templateParams);
 
     try {
         const response = await emailjs.send('service_nfns0rk', 'template_0x1dgor', templateParams);
