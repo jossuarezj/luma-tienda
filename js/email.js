@@ -1,21 +1,9 @@
-// js/email.js
 export async function enviarCorreoConfirmacion(datosCompra) {
     console.log("📧 Enviando correo...", datosCompra);
-
-    // Escape básico para evitar corrupción
     function escapeHtml(str) {
         if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/\n/g, ' ')
-            .replace(/\s+/g, ' ');
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, ' ').replace(/\s+/g, ' ');
     }
-
-    // Construir productosHTML
     let productosHTML = '';
     const productosArray = datosCompra.productos || [];
     if (productosArray.length === 0) {
@@ -28,17 +16,10 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             const cantidad = p.cantidad || 1;
             const precio = p.precio || p.PRECIO || 0;
             const subtotalProducto = precio * cantidad;
-            productosHTML += `
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #D7C9B2;padding:10px 0;">
-                    <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
-                    <span>$${subtotalProducto.toLocaleString()}</span>
-                </div>
-            `;
+            productosHTML += `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #D7C9B2;padding:10px 0;"><span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span><span>$${subtotalProducto.toLocaleString()}</span></div>`;
         }
     }
     productosHTML = productosHTML.replace(/\n/g, '').replace(/\s{2,}/g, ' ');
-
-    // Dirección
     let direccion = 'No especificada', ciudad = 'No especificada';
     if (datosCompra.datosEnvio) {
         direccion = escapeHtml(datosCompra.datosEnvio.direccion) || direccion;
@@ -47,20 +28,15 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         direccion = escapeHtml(datosCompra.direccion);
         ciudad = escapeHtml(datosCompra.ciudad) || ciudad;
     }
-
-    // Números
     const subtotalNum = Number(datosCompra.subtotal) || 0;
     const descuentoNum = Number(datosCompra.descuento) || 0;
     let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
     if (datosCompra.envioGratis) costoEnvioNum = 0;
     const totalNum = Number(datosCompra.total) || 0;
-
-    // Formato para mostrar (sin caracteres extraños)
     const subtotalStr = `$${subtotalNum.toLocaleString()}`;
     const descuentoStr = descuentoNum > 0 ? `$${descuentoNum.toLocaleString()}` : '';
     const envioStr = datosCompra.envioGratis ? 'GRATIS' : `$${costoEnvioNum.toLocaleString()}`;
     const totalStr = `$${totalNum.toLocaleString()}`;
-
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: escapeHtml(datosCompra.nombre || datosCompra.usuario || 'Cliente'),
@@ -74,14 +50,8 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad: ciudad,
         productos: productosHTML
     };
-
-    // Reemplazar undefined/null por string vacío
-    Object.keys(templateParams).forEach(k => {
-        if (templateParams[k] === undefined || templateParams[k] === null) templateParams[k] = '';
-    });
-
-    console.log("📧 Parámetros enviados:", templateParams);
-
+    Object.keys(templateParams).forEach(k => { if (templateParams[k] === undefined || templateParams[k] === null) templateParams[k] = ''; });
+    console.log("📧 Enviando a EmailJS:", templateParams);
     try {
         const response = await emailjs.send('service_nfns0rk', 'template_0x1dgor', templateParams);
         console.log('✅ Correo enviado', response);
