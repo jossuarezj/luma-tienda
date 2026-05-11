@@ -88,13 +88,12 @@ export async function enviarCorreoConfirmacion(datosCompra) {
     const envioStr = datosCompra.envioGratis ? 'GRATIS' : costoEnvioNum.toLocaleString();
     const totalStr = totalNum.toLocaleString();
 
-    // 4. Parámetros para EmailJS (todos strings limpios)
+    // 4. Parámetros para EmailJS (SIN la propiedad 'descuento' si es cero)
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: sanitize(datosCompra.nombre || datosCompra.usuario || datosCompra.nombreCliente || 'Cliente'),
         numeroPedido: sanitize(datosCompra.numeroPedido || `LUMA-${Date.now()}`),
         subtotal: subtotalStr,
-        descuento: descuentoStr,      // vacío si no hay descuento
         costoEnvio: envioStr,
         total: totalStr,
         metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta de crédito (ePayco)' : 'Contra entrega (efectivo)',
@@ -103,7 +102,12 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         productos: productosHTML
     };
 
-    // Reemplazar undefined/null por string vacío
+    // Solo agregar 'descuento' si es mayor que 0
+    if (descuentoNum > 0) {
+        templateParams.descuento = descuentoStr;
+    }
+
+    // Opcional: reemplazar undefined/null (aunque ya no debería haber)
     Object.keys(templateParams).forEach(k => {
         if (templateParams[k] === undefined || templateParams[k] === null) templateParams[k] = '';
     });
@@ -111,7 +115,6 @@ export async function enviarCorreoConfirmacion(datosCompra) {
     console.log("📧 Enviando a EmailJS:", templateParams);
 
     try {
-        // ⚠️ CAMBIA 'template_0x1dgor' POR EL ID DE TU NUEVO TEMPLATE ⚠️
         const response = await emailjs.send('service_nfns0rk', 'template_0x1dgor', templateParams);
         console.log('✅ Correo enviado', response);
         return true;
