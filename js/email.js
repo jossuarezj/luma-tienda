@@ -1,9 +1,8 @@
 // js/email.js
 export async function enviarCorreoConfirmacion(datosCompra) {
-    console.log("📧 Enviando correo de confirmación...");
-    console.log("📦 Datos de compra:", datosCompra);
+    console.log("📧 Enviando correo...", datosCompra);
 
-    // Limpia caracteres peligrosos para EmailJS
+    // Sanitización extrema para EmailJS
     function sanitize(str) {
         if (!str) return '';
         return String(str)
@@ -12,12 +11,12 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;')
-            .replace(/\n/g, ' ')
-            .replace(/\s+/g, ' ')
+            .replace(/[\n\r]/g, ' ')   // elimina saltos de línea
+            .replace(/\s+/g, ' ')       // espacios múltiples a uno
             .trim();
     }
 
-    // 1. Productos HTML
+    // ========== 1. Construir HTML de productos de forma SEGURA ==========
     let productosHTML = '';
     let productosArray = datosCompra.productos || [];
     if (productosArray.length === 0 && datosCompra.itemsParaGuardar) {
@@ -26,46 +25,29 @@ export async function enviarCorreoConfirmacion(datosCompra) {
 
     if (productosArray.length > 0) {
         for (const p of productosArray) {
-            const nombre = sanitize(p.nombre || p.NOMBRE || p.nombreProducto || p.name || 'Producto');
-            const color = sanitize(p.colorNombre || p.COLORNOMBRE || p.color || '');
-            const talla = sanitize(p.talla || p.TALLA || '');
+            const nombre = sanitize(p.nombre || p.NOMBRE || 'Producto');
+            const color = sanitize(p.colorNombre || p.COLORNOMBRE || '');
+            const talla = sanitize(p.talla || '');
             const cantidad = p.cantidad || 1;
             const precio = p.precio || p.PRECIO || 0;
-            const subtotalProducto = precio * cantidad;
+            const subtotal = precio * cantidad;
 
-            if (p.esPack && p.productosIncluidosDetalle && p.productosIncluidosDetalle.length > 0) {
-                productosHTML += `
-                    <div style="margin-bottom:15px;padding:10px;background:#E8DCCC;border-radius:12px;">
-                        <p style="font-weight:bold;margin-bottom:8px;">📦 ${nombre}</p>
-                `;
-                for (const detalle of p.productosIncluidosDetalle) {
-                    const dNombre = sanitize(detalle.nombre || detalle.NOMBRE || 'Producto');
-                    const dColor = sanitize(detalle.colorNombre || detalle.COLORNOMBRE || '');
-                    const dTalla = sanitize(detalle.talla || '');
-                    const dCant = detalle.cantidad || 1;
-                    productosHTML += `
-                        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #D7C9B2;">
-                            <span>• ${dNombre} ${dColor} ${dTalla ? `(Talla ${dTalla})` : ''}</span>
-                            <span>x${dCant}</span>
-                        </div>
-                    `;
-                }
-                productosHTML += `</div>`;
-            } else {
-                productosHTML += `
-                    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #D7C9B2;">
-                        <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
-                        <span>$${subtotalProducto.toLocaleString()}</span>
-                    </div>
-                `;
-            }
+            // Producto normal (sin pack)
+            productosHTML += `
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #D7C9B2;">
+                    <span>${nombre} ${color} ${talla ? `Talla ${talla}` : ''} x${cantidad}</span>
+                    <span>$${subtotal.toLocaleString()}</span>
+                </div>
+            `;
         }
     } else {
-        productosHTML = '<p>No hay productos registrados</p>';
+        productosHTML = '<p>Sin productos</p>';
     }
-    productosHTML = productosHTML.replace(/\n/g, '').replace(/\s{2,}/g, ' ');
 
-    // 2. Dirección
+    // Eliminar cualquier carácter extraño que pueda quedar
+    productosHTML = productosHTML.replace(/[\n\r\t]/g, '').replace(/\s{2,}/g, ' ');
+
+    // ========== 2. Dirección ==========
     let direccion = 'No especificada';
     let ciudad = 'No especificada';
     if (datosCompra.datosEnvio) {
@@ -76,40 +58,37 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad = sanitize(datosCompra.ciudad) || ciudad;
     }
 
-    // 3. Números (sin símbolo de moneda, solo el número formateado)
-    const subtotalNum = Number(datosCompra.subtotal) || 0;
-    const descuentoNum = Number(datosCompra.descuento) || 0;
-    let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
-    if (datosCompra.envioGratis) costoEnvioNum = 0;
-    const totalNum = Number(datosCompra.total) || 0;
+    // ========== 3. Valores numéricos ==========
+    const subtotal = Number(datosCompra.subtotal) || 0;
+    const descuento = Number(datosCompra.descuento) || 0;
+    let envio = Number(datosCompra.costoEnvio) || 0;
+    if (datosCompra.envioGratis) envio = 0;
+    const total = Number(datosCompra.total) || 0;
 
-    const subtotalStr = subtotalNum.toLocaleString();
-    const descuentoStr = descuentoNum > 0 ? descuentoNum.toLocaleString() : '';
-    const envioStr = datosCompra.envioGratis ? 'GRATIS' : costoEnvioNum.toLocaleString();
-    const totalStr = totalNum.toLocaleString();
-
-    // 4. Parámetros para EmailJS (SIN la propiedad 'descuento' si es cero)
+    // ========== 4. Parámetros para EmailJS (SIN descuento si es 0) ==========
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
-        nombre: sanitize(datosCompra.nombre || datosCompra.usuario || datosCompra.nombreCliente || 'Cliente'),
+        nombre: sanitize(datosCompra.nombre || datosCompra.usuario || 'Cliente'),
         numeroPedido: sanitize(datosCompra.numeroPedido || `LUMA-${Date.now()}`),
-        subtotal: subtotalStr,
-        costoEnvio: envioStr,
-        total: totalStr,
-        metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta de crédito (ePayco)' : 'Contra entrega (efectivo)',
+        subtotal: subtotal.toLocaleString(),
+        costoEnvio: datosCompra.envioGratis ? 'GRATIS' : envio.toLocaleString(),
+        total: total.toLocaleString(),
+        metodoPago: datosCompra.metodoPago === 'epayco' ? 'Tarjeta (ePayco)' : 'Contra entrega',
         direccion: direccion,
         ciudad: ciudad,
         productos: productosHTML
     };
 
     // Solo agregar 'descuento' si es mayor que 0
-    if (descuentoNum > 0) {
-        templateParams.descuento = descuentoStr;
+    if (descuento > 0) {
+        templateParams.descuento = descuento.toLocaleString();
     }
 
-    // Opcional: reemplazar undefined/null (aunque ya no debería haber)
+    // Eliminar cualquier undefined/null
     Object.keys(templateParams).forEach(k => {
-        if (templateParams[k] === undefined || templateParams[k] === null) templateParams[k] = '';
+        if (templateParams[k] === undefined || templateParams[k] === null) {
+            delete templateParams[k];
+        }
     });
 
     console.log("📧 Enviando a EmailJS:", templateParams);
@@ -119,7 +98,7 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         console.log('✅ Correo enviado', response);
         return true;
     } catch (error) {
-        console.error('❌ Error EmailJS:', error);
+        console.error('❌ Error:', error);
         if (error.text) console.error('Detalle:', error.text);
         return false;
     }
