@@ -344,43 +344,37 @@ function actualizarVistaPrevia() {
     if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
 }
 
-window.seleccionarColor = function(color, bgColor) {
+window.seleccionarColor = function(color, bgColor, event) {
     colorSeleccionadoPack = color;
     const colorInput = document.getElementById('selectColor');
     if (colorInput) colorInput.value = color;
     document.querySelectorAll('.color-btn').forEach(btn => {
         btn.classList.remove('ring-2', 'ring-[#7B7369]', 'scale-105');
     });
-    if (event && event.target) event.target.classList.add('ring-2', 'ring-[#7B7369]', 'scale-105');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('ring-2', 'ring-[#7B7369]', 'scale-105');
+    } else {
+        // fallback: buscar por texto
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            if (btn.innerText === color) btn.classList.add('ring-2', 'ring-[#7B7369]', 'scale-105');
+        });
+    }
     actualizarVistaPrevia();
 };
 
-window.seleccionarTallaPack = function(talla) {
-    console.log("🔵 Función seleccionarTallaPack llamada con:", talla);
-    
+window.seleccionarTallaPack = function(talla, event) {
     tallaSeleccionadaPack = talla;
-    
     const tallaInput = document.getElementById('selectTalla');
     if (tallaInput) tallaInput.value = talla;
     
-    const todosLosBotones = document.querySelectorAll('.talla-pack-btn');
-    
-    // Resetear todos los botones a estado NO seleccionado
-    todosLosBotones.forEach(btn => {
+    document.querySelectorAll('.talla-pack-btn').forEach(btn => {
         btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
         btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');
     });
-    
-    const idBoton = `tallaPack_${talla}`;
-    const btnSeleccionado = document.getElementById(idBoton);
-    
+    const btnSeleccionado = event ? event.currentTarget : document.getElementById(`tallaPack_${talla}`);
     if (btnSeleccionado) {
-        // Estado SELECCIONADO
         btnSeleccionado.classList.remove('bg-white', 'text-[#4d4845]');
         btnSeleccionado.classList.add('bg-[#F5ECDC]', 'text-[#4d4845]');
-        console.log("✅ Estilos aplicados al botón:", talla);
-    } else {
-        console.error("❌ No se encontró el botón con ID:", idBoton);
     }
 };
 
@@ -463,7 +457,7 @@ function actualizarListaPack() {
     const packTotal = packCantidadActual === 3 ? 99990 : 119990;
     const seleccionados = packProductosTemp.length;
     
-    // ✅ ACTUALIZAR CONTADORES (nuevo)
+    // Actualizar contadores
     const packSeleccionadosSpan = document.getElementById('packSeleccionados');
     const packRequeridosSpan = document.getElementById('packRequeridos');
     const packContadorSpan = document.getElementById('packContador');
@@ -474,28 +468,30 @@ function actualizarListaPack() {
     
     if (!container) return;
     
-    if (packProductosTemp.length === 0) {
+    if (seleccionados === 0) {
         container.innerHTML = `<div class="text-center text-gray-400 py-8">
             <i class="fas fa-inbox text-4xl mb-2"></i>
             <p class="text-sm">No hay productos seleccionados</p>
-            <p class="text-xs mt-1">Agrega productos usando el panel de la izquierda</p>
+            <p class="text-xs mt-1">Usa el panel izquierdo para agregar</p>
         </div>`;
         if (totalSpan) totalSpan.innerText = `$${packTotal.toLocaleString()}`;
         if (btnConfirmar) {
             btnConfirmar.disabled = true;
-            btnConfirmar.innerHTML = `<i class="fas fa-cart-plus mr-2"></i> Agregar al carrito (0/${packCantidadActual})`;
+            btnConfirmar.innerHTML = `<i class="fas fa-cart-plus mr-2"></i> Agregar (0/${packCantidadActual})`;
         }
         return;
     }
     
+    // Mostrar productos en grid (mejor visual)
     container.innerHTML = packProductosTemp.map((p, idx) => `
-        <div class="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#F2EBDC]">
-            <img src="${p.imagen}" class="w-12 h-12 object-contain rounded-lg bg-[#F9F6F0] cursor-pointer hover:opacity-80 transition" onclick="verImagenPack('${p.imagen}')">   
+        <div class="flex items-center gap-3 p-3 bg-[#F9F6F0] rounded-xl border border-[#E8DDD0] hover:shadow-md transition">
+            <img src="${p.imagen}" class="w-16 h-16 object-contain rounded-lg bg-white p-1 shadow-sm" onclick="verImagenPack('${p.imagen}')">
             <div class="flex-1">
-                <h4 class="font-semibold text-sm">${p.categoria} - ${p.referencia} ${p.color}</h4>
-                <p class="text-xs text-gray-500">Talla: ${p.talla}</p>
+                <h4 class="font-bold text-sm text-[#4D4845]">${p.categoria} - ${p.referencia}</h4>
+                <p class="text-xs text-gray-500 mt-0.5">${p.color} · Talla ${p.talla}</p>
+                <p class="text-xs font-semibold text-[#7B7369] mt-1">$${p.precio.toLocaleString()}</p>
             </div>
-            <button onclick="eliminarProductoDelPack(${idx})" class="text-red-400 hover:text-red-600">
+            <button onclick="eliminarProductoDelPack(${idx})" class="text-red-400 hover:text-red-600 transition p-2">
                 <i class="fas fa-trash-alt"></i>
             </button>
         </div>

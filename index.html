@@ -831,99 +831,100 @@
 </div>
 <div id="cartOverlay" class="fixed inset-0 bg-black bg-opacity-40 z-40 hidden"></div>
 
-<!-- Modal Pack Mejorado - Versión compacta para móvil -->
+<!-- Modal Pack Mejorado - Diseño moderno y responsive -->
 <div id="packModal" class="fixed inset-0 z-50 hidden items-center justify-center p-2 md:p-4 modal-overlay">
     <div class="absolute inset-0 bg-black bg-opacity-60"></div>
-    <div class="relative bg-white rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-3 md:p-6 z-10">
+    <div class="relative bg-white rounded-2xl md:rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-3 md:p-6 z-10 shadow-2xl">
         
-        <!-- Header compacto -->
-        <div class="flex justify-between items-center mb-3 md:mb-4 sticky top-0 bg-white pb-2 md:pb-4 border-b">
-            <h2 id="packModalTitle" class="text-base md:text-2xl font-bold flex items-center gap-1 md:gap-2">
-                <i class="fas fa-boxes text-[#7B7369] text-sm md:text-2xl"></i> 
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-3 md:mb-4 sticky top-0 bg-white pb-2 md:pb-4 border-b border-[#E8DDD0] z-10">
+            <h2 id="packModalTitle" class="text-base md:text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-boxes text-[#7B7369] text-sm md:text-2xl"></i>
                 <span class="text-sm md:text-2xl">Pack <span id="packCantidadHeader">0</span> Bodys</span>
             </h2>
-            <button onclick="cerrarPackModal()" class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex-shrink-0">
-                <i class="fas fa-times text-xs md:text-sm"></i>
+            <button onclick="cerrarPackModal()" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center">
+                <i class="fas fa-times text-sm md:text-base"></i>
             </button>
         </div>
         
-        <!-- Grid: En PC 2 columnas, en móvil 1 columna -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+        <!-- Grid: 2 columnas en PC, 1 en móvil -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             
-            <!-- PANEL IZQUIERDO: Selección de producto (compacto) -->
-            <div class="bg-[#F9F6F0] rounded-xl md:rounded-2xl p-3 md:p-5">
-                <h3 class="font-bold text-sm md:text-lg mb-2 md:mb-4 flex items-center gap-1 md:gap-2">
-                    <i class="fas fa-plus-circle text-[#7B7369] text-xs md:text-xl"></i> 
-                    <span class="text-xs md:text-base">Agregar producto</span>
+            <!-- PANEL IZQUIERDO: Selección de producto (mejorado visualmente) -->
+            <div class="bg-[#F9F6F0] rounded-2xl p-4 md:p-5 shadow-inner">
+                <h3 class="font-bold text-base md:text-lg mb-3 flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-[#7B7369] text-sm md:text-xl"></i>
+                    <span>Agregar producto</span>
                 </h3>
                 
-                <!-- Vista previa de imagen -->
-                <div id="previewImagen" class="bg-white rounded-lg md:rounded-xl h-32 md:h-48 flex items-center justify-center mb-3 md:mb-4 border border-dashed border-[#7B7369] overflow-hidden">
+                <!-- Vista previa de imagen con tamaño mejorado -->
+                <div id="previewImagen" class="bg-white rounded-xl h-40 md:h-56 flex items-center justify-center mb-4 border-2 border-dashed border-[#D7C9B2] overflow-hidden shadow-sm">
                     <img id="previewImg" src="" class="w-full h-full object-contain hidden">
                     <div id="previewPlaceholder" class="text-center text-gray-400">
-                        <i class="fas fa-image text-2xl md:text-5xl mb-1 md:mb-2"></i>
-                        <p class="text-[10px] md:text-sm">Vista previa</p>
+                        <i class="fas fa-image text-4xl md:text-6xl mb-2"></i>
+                        <p class="text-xs md:text-sm">Vista previa</p>
                     </div>
                 </div>
                 
-                <!-- Selector Referencia (compacto) -->
-                <div class="mb-3 md:mb-4">
-                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Referencia *</label>
-                    <select id="selectReferencia" class="w-full border border-[#F2EBDC] rounded-lg md:rounded-xl px-3 md:px-4 py-1.5 md:py-3 text-xs md:text-sm focus:outline-none focus:border-[#7B7369]">
+                <!-- Selector Referencia -->
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 text-[#4D4845]">Referencia *</label>
+                    <select id="selectReferencia" class="w-full border border-[#E8DDD0] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#7B7369] focus:ring-1 focus:ring-[#7B7369]">
                         <option value="">Selecciona un modelo</option>
                     </select>
                 </div>
                 
-                <!-- Selector Color (compacto) -->
-                <div class="mb-3 md:mb-4">
-                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Color *</label>
-                    <div class="grid grid-cols-4 gap-1 md:gap-2">
-                        <button onclick="seleccionarColor('MARFIL', '#F5ECDC')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #F5ECDC; color: #4d4845;">MARFIL</button>
-                        <button onclick="seleccionarColor('NEGRO', '#1A1A1A')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #1A1A1A; color: white;">NEGRO</button>
-                        <button onclick="seleccionarColor('COCOA', '#99705D')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #99705D; color: white;">COCOA</button>
-                        <button onclick="seleccionarColor('BEIGE', '#DEC6A9')" class="color-btn py-1 md:py-2 rounded-lg md:rounded-xl border-2 border-transparent text-[10px] md:text-sm font-medium transition-all" style="background-color: #DEC6A9; color: #4d4845;">BEIGE</button>
+                <!-- Selector Color (mejorado con badges) -->
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 text-[#4D4845]">Color *</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="seleccionarColor('MARFIL', '#F5ECDC', event)" class="color-btn py-2 rounded-xl border-2 border-transparent text-xs md:text-sm font-medium transition-all shadow-sm" style="background-color: #F5ECDC; color: #4d4845;">MARFIL</button>
+                        <button onclick="seleccionarColor('NEGRO', '#1A1A1A', event)" class="color-btn py-2 rounded-xl border-2 border-transparent text-xs md:text-sm font-medium transition-all shadow-sm" style="background-color: #1A1A1A; color: white;">NEGRO</button>
+                        <button onclick="seleccionarColor('COCOA', '#99705D', event)" class="color-btn py-2 rounded-xl border-2 border-transparent text-xs md:text-sm font-medium transition-all shadow-sm" style="background-color: #99705D; color: white;">COCOA</button>
+                        <button onclick="seleccionarColor('BEIGE', '#DEC6A9', event)" class="color-btn py-2 rounded-xl border-2 border-transparent text-xs md:text-sm font-medium transition-all shadow-sm" style="background-color: #DEC6A9; color: #4d4845;">BEIGE</button>
                     </div>
                     <input type="hidden" id="selectColor" value="">
                 </div>
                 
-                <!-- Selector Talla (compacto) -->
-                <div class="mb-3 md:mb-4">
-                    <label class="block text-xs md:text-sm font-semibold mb-1 md:mb-2">Talla *</label>
-                    <div class="flex gap-2 md:gap-3">
-                        <button onclick="seleccionarTallaPack('S/M')" id="tallaPack_S/M" class="talla-pack-btn flex-1 py-1 md:py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition-all duration-200 text-xs md:text-sm">S/M</button>
-                        <button onclick="seleccionarTallaPack('L/XL')" id="tallaPack_L/XL" class="talla-pack-btn flex-1 py-1 md:py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition-all duration-200 text-xs md:text-sm">L/XL</button>
+                <!-- Selector Talla -->
+                <div class="mb-4">
+                    <label class="block text-xs md:text-sm font-semibold mb-1 text-[#4D4845]">Talla *</label>
+                    <div class="flex gap-3">
+                        <button onclick="seleccionarTallaPack('S/M', event)" id="tallaPack_S/M" class="talla-pack-btn flex-1 py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition text-sm">S/M</button>
+                        <button onclick="seleccionarTallaPack('L/XL', event)" id="tallaPack_L/XL" class="talla-pack-btn flex-1 py-2 rounded-full border border-[#7B7369] bg-white text-[#4d4845] hover:bg-[#F5ECDC] transition text-sm">L/XL</button>
                     </div>
                     <input type="hidden" id="selectTalla" value="">
                 </div>
 
-                <button onclick="agregarProductoAlPack()" class="btn-primary w-full py-1.5 md:py-3 rounded-full font-semibold mt-2 md:mt-4 text-xs md:text-sm">
-                    <i class="fas fa-plus mr-1 md:mr-2 text-xs"></i> Agregar
+                <button onclick="agregarProductoAlPack()" class="btn-primary w-full py-2.5 rounded-full font-semibold mt-2 text-sm shadow-md hover:shadow-lg transition">
+                    <i class="fas fa-plus mr-2"></i> Agregar al pack
                 </button>
             </div>
             
-            <!-- PANEL DERECHO: Lista de productos seleccionados (compacto) -->
-            <div class="bg-white rounded-xl md:rounded-2xl p-3 md:p-5 border border-[#F2EBDC]">
-                <h3 class="font-bold text-sm md:text-lg mb-2 md:mb-4 flex items-center gap-1 md:gap-2">
-                    <i class="fas fa-list-check text-[#7B7369] text-xs md:text-xl"></i>
-                    <span class="text-xs md:text-base">Seleccionados</span>
-                    <span id="packContador" class="text-[10px] md:text-xs bg-[#F2EBDC] px-1.5 md:px-2 py-0.5 md:py-1 rounded-full ml-auto">0/0</span>
+            <!-- PANEL DERECHO: Lista de productos seleccionados (mejorado con grid y fotos) -->
+            <div class="bg-white rounded-2xl p-4 md:p-5 border border-[#E8DDD0] shadow-sm">
+                <h3 class="font-bold text-base md:text-lg mb-3 flex items-center gap-2">
+                    <i class="fas fa-list-check text-[#7B7369] text-sm md:text-xl"></i>
+                    <span>Seleccionados</span>
+                    <span id="packContador" class="ml-auto text-xs bg-[#F2EBDC] px-2 py-1 rounded-full">0/0</span>
                 </h3>
                 
-                <div id="packProductosList" class="space-y-2 md:space-y-3 max-h-[250px] md:max-h-[400px] overflow-y-auto pr-1 md:pr-2">
-                    <div class="text-center text-gray-400 py-6 md:py-8">
-                        <i class="fas fa-inbox text-2xl md:text-4xl mb-1 md:mb-2"></i>
-                        <p class="text-xs md:text-sm">No hay productos</p>
+                <div id="packProductosList" class="space-y-3 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-1">
+                    <!-- Aquí se cargarán los productos con imagen mediana -->
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p class="text-sm">No hay productos</p>
                     </div>
                 </div>
                 
-                <!-- Resumen del pack (compacto) -->
-                <div class="border-t pt-3 md:pt-4 mt-3 md:mt-4">
-                    <div class="flex justify-between items-center mb-2 md:mb-3">
-                        <span class="font-semibold text-xs md:text-base">Total:</span>
-                        <span id="packTotal" class="text-base md:text-2xl font-bold text-[#7B7369]">$0</span>
+                <!-- Resumen del pack -->
+                <div class="border-t border-[#E8DDD0] pt-4 mt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-semibold text-base">Total pack:</span>
+                        <span id="packTotal" class="text-xl md:text-2xl font-bold text-[#7B7369]">$0</span>
                     </div>
-                    <button id="confirmarPackBtn" class="btn-primary w-full py-1.5 md:py-3 rounded-full font-semibold disabled:opacity-50 text-xs md:text-sm" disabled>
-                        <i class="fas fa-cart-plus mr-1 md:mr-2"></i> Agregar (<span id="packSeleccionados">0</span>/<span id="packRequeridos">0</span>)
+                    <button id="confirmarPackBtn" class="btn-primary w-full py-3 rounded-full font-semibold disabled:opacity-50 transition" disabled>
+                        <i class="fas fa-cart-plus mr-2"></i> Agregar (<span id="packSeleccionados">0</span>/<span id="packRequeridos">0</span>)
                     </button>
                 </div>
             </div>
