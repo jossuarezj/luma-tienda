@@ -351,7 +351,9 @@ function actualizarVistaPrevia() {
         // Mostrar miniaturas
         if (thumbContainer) {
             thumbContainer.innerHTML = imagenesProductoActual.map((img, idx) => `
-                <img src="${img}" class="w-10 h-10 object-cover rounded cursor-pointer border-2 ${idx === 0 ? 'border-[#4d4845]' : 'border-transparent'}" onclick="cambiarImagenPack(${idx})">
+                <img src="${img}" class="w-10 h-10 object-cover rounded cursor-pointer border-2 ${idx === 0 ? 'border-[#4d4845]' : 'border-transparent'}" 
+                    onclick="cambiarImagenPack(${idx})" 
+                    ondblclick="abrirLightbox(imagenesProductoActual, ${idx})">
             `).join('');
             thumbContainer.classList.remove('hidden');
         }
@@ -385,6 +387,13 @@ function mostrarImagenActual() {
         previewImg.src = imagenesProductoActual[indiceImagenActual];
         previewImg.classList.remove('hidden');
         previewPlaceholder.classList.add('hidden');
+        // 🔥 Agregar evento click para abrir lightbox con todas las imágenes
+        previewImg.onclick = () => {
+            if (typeof abrirLightbox === 'function') {
+                abrirLightbox(imagenesProductoActual, indiceImagenActual);
+            }
+        };
+        previewImg.style.cursor = 'pointer';
     }
     // Resaltar miniatura activa
     const thumbImgs = document.querySelectorAll('#imageThumbnails img');
