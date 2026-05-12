@@ -1225,11 +1225,9 @@ window.confirmarPedidoFinal = async function(datosStr) {
     cerrarModalConfirmacionPrevia();
     guardarDatosEnvio(datos);
     
-    // ✅ GENERAR NÚMERO DE PEDIDO ÚNICO (UNA SOLA VEZ)
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 6);
     const numeroPedido = `LUMA-${timestamp}-${random}`;
-    
     console.log("📝 Número de pedido generado:", numeroPedido);
     
     const user = getCurrentUser();
@@ -1241,35 +1239,36 @@ window.confirmarPedidoFinal = async function(datosStr) {
     console.log('🔍 itemsNormales:', itemsNormales);
     console.log('🔍 hayProductosIndividuales:', hayProductosIndividuales);
     
-    // Marcar descuento de primera compra si aplica (solo si no se usó cupón)
+    // Marcar descuento de primera compra si aplica
     if (!usedCoupon && user && user.email && hayProductosIndividuales) {
         localStorage.setItem(`luma_descuento_usado_${user.email}`, 'true');
         usedCoupon = true;
         localStorage.setItem('lumaCouponUsed', 'true');
     }
     
-    // ✅ LIMPIAR CUPÓN APLICADO (tanto el código como el objeto completo)
-    localStorage.removeItem('cuponAplicado');
-    localStorage.removeItem('luma_current_coupon');
-    
-    // 🔥 CALCULAR DESCUENTO DIRECTAMENTE (igual que en finalizarCompraConDatosEnvio)
+    // 🔥 CALCULAR DESCUENTO ANTES DE LIMPIAR EL CUPÓN
     const itemsVisibles = carritoItems.filter(item => !item.esParteDePack);
     const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
     
     let descuento = 0;
-    // Obtener el cupón activo (si existe)
     const cuponGuardado = localStorage.getItem('luma_current_coupon');
     if (cuponGuardado) {
-        const cupon = JSON.parse(cuponGuardado);
-        const { calcularSubtotalElegible } = await import('./cart.js');
-        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cupon);
-        if (cupon.tipo === "porcentaje") {
-            descuento = subtotalElegible * (cupon.valor / 100);
-        } else {
-            descuento = Math.min(cupon.valor, subtotalElegible);
-        }
+        try {
+            const cupon = JSON.parse(cuponGuardado);
+            const { calcularSubtotalElegible } = await import('./cart.js');
+            const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cupon);
+            if (cupon.tipo === "porcentaje") {
+                descuento = subtotalElegible * (cupon.valor / 100);
+            } else {
+                descuento = Math.min(cupon.valor, subtotalElegible);
+            }
+            console.log("🔥 Descuento calculado en confirmarPedidoFinal:", descuento);
+        } catch(e) { console.error("Error al calcular descuento:", e); }
     }
-    console.log("🔥 Descuento calculado en confirmarPedidoFinal:", descuento);
+    
+    // ✅ AHORA LIMPIAR EL CUPÓN APLICADO (después de calcular)
+    localStorage.removeItem('cuponAplicado');
+    localStorage.removeItem('luma_current_coupon');
     
     const envioGratis = subtotal >= 99990;
     const costoEnvio = envioGratis ? 0 : 17500;
@@ -1290,7 +1289,7 @@ window.confirmarPedidoFinal = async function(datosStr) {
                 email: user?.email || 'cliente@email.com',
                 numeroPedido: numeroPedido,
                 subtotal: subtotal,
-                descuento: descuento,
+                descuento: descuento,   // ← ahora sí tiene el valor correcto
                 costoEnvio: costoEnvio,
                 envioGratis: envioGratis,
                 total: total,
@@ -1299,7 +1298,6 @@ window.confirmarPedidoFinal = async function(datosStr) {
                 ciudad: datos.ciudad,
                 productos: productosCorreo
             };
-                        
             await enviarCorreoConfirmacion(datosCorreo);
             console.log('✅ Correo enviado a:', datosCorreo.email);
         } catch (errorCorreo) {
@@ -1307,16 +1305,10 @@ window.confirmarPedidoFinal = async function(datosStr) {
         }
     })();
     
-    // ✅ PASAR EL NÚMERO DE PEDIDO Y EL DESCUENTO A finalizarCompraConDatosEnvio
-    // Nota: finalizarCompraConDatosEnvio ya guarda el descuento en Firestore, pero no lo necesitamos para el correo
     window.finalizarCompraConDatosEnvio(datos, numeroPedido);
     cerrarModalEnvio();
-    
-    setTimeout(() => {
-        window.location.reload();
-    }, 10000);
+    setTimeout(() => window.location.reload(), 10000);
 };
-
 
 
 // ==================== GOOGLE MAPS ====================
