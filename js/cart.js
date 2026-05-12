@@ -368,6 +368,7 @@ export async function finalizarCompraConDatosEnvio(datos, numeroPedido) {
     }
 
     console.log("🏷️ Descuento:", descuento);
+    localStorage.setItem('luma_last_descuento', descuento);
     
     const envioGratisCalc = subtotal >= UMBRAL_ENVIO_GRATIS;
     const costoEnvioActual = envioGratisCalc ? 0 : 17500;

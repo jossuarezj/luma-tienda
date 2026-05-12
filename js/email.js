@@ -1,6 +1,6 @@
 // js/email.js
 export async function enviarCorreoConfirmacion(datosCompra) {
-    console.log("📧 Enviando correo de confirmación...");
+    console.log("📧 DATOS COMPRA RECIBIDOS:", datosCompra);
 
     function sanitize(str) {
         if (!str) return '';
@@ -15,9 +15,9 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             .trim();
     }
 
+    // Construir productos HTML
     let productosHTML = '';
-    let productosArray = datosCompra.productos || [];
-
+    const productosArray = datosCompra.productos || [];
     if (productosArray.length > 0) {
         for (const p of productosArray) {
             const nombre = sanitize(p.nombre || p.NOMBRE || 'Producto');
@@ -37,13 +37,14 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         productosHTML = '<p>No hay productos registrados</p>';
     }
 
-    // ===== AGREGAR DESCUENTO COMO PARTE DE LOS PRODUCTOS =====
-    const descuentoNum = Number(datosCompra.descuento) || 0;
-    if (descuentoNum > 0) {
+    // Agregar descuento como fila extra si existe y es mayor a 0
+    const descuentoValor = Number(datosCompra.descuento) || 0;
+    console.log("💰 Descuento recibido en email.js:", descuentoValor);
+    if (descuentoValor > 0) {
         productosHTML += `
-            <div style="display:flex;justify-content:space-between;padding:8px 0;color:#27ae60; font-weight:500;">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #D7C9B2; color:#27ae60; font-weight:bold;">
                 <span>🎉 Descuento aplicado</span>
-                <span> -$${descuentoNum.toLocaleString()}</span>
+                <span> -$${descuentoValor.toLocaleString()}</span>
             </div>
         `;
     }
@@ -59,13 +60,13 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad = sanitize(datosCompra.ciudad) || ciudad;
     }
 
-    // Valores numéricos
+    // Totales
     const subtotalNum = Number(datosCompra.subtotal) || 0;
     let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
     if (datosCompra.envioGratis) costoEnvioNum = 0;
     const totalNum = Number(datosCompra.total) || 0;
 
-    // Parámetros para EmailJS (SIN descuento por separado)
+    // Parámetros para EmailJS (sin variable descuento separada)
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: sanitize(datosCompra.nombre || datosCompra.usuario || 'Cliente'),

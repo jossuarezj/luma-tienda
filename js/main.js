@@ -458,7 +458,7 @@ function mostrarImagenActual() {
     });
     
     console.log("✅ Imagen actual mostrada, placeholder oculto");
-}
+}   
 
 // === Cambiar imagen desde miniaturas, botones o swipe ===
 window.cambiarImagenPack = function(nuevoIndice) {
@@ -1257,31 +1257,11 @@ window.confirmarPedidoFinal = async function(datosStr) {
         try {
             const carritoActual = getCart();
             const itemsVisibles = carritoActual.filter(item => !item.esParteDePack);
-            
             const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-            let descuento = 0;
-            const userEmail = getCurrentUser();
             
-            const hayProductosIndividuales2 = itemsVisibles.some(item => !item.esPack);
-            let descuentoYaUsado = false;
-            if (userEmail && userEmail.email) {
-                descuentoYaUsado = localStorage.getItem(`luma_descuento_usado_${userEmail.email}`) === 'true';
-            }
-            
-            // Volver a calcular descuento (podría haberse aplicado cupón o primera compra)
-            let cuponActivo = null;
-            const cuponGuardado = localStorage.getItem('luma_current_coupon'); // ya se eliminó, pero por si acaso
-            if (cuponGuardado) cuponActivo = JSON.parse(cuponGuardado);
-            
-            if (cuponActivo && (!cuponActivo.usosPorUsuario || !cuponActivo.usosPorUsuario.includes(userEmail?.email))) {
-                const { calcularSubtotalElegible } = await import('./cart.js');
-                const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponActivo);
-                if (cuponActivo.tipo === "porcentaje") {
-                    descuento = subtotalElegible * (cuponActivo.valor / 100);
-                } else {
-                    descuento = Math.min(cuponActivo.valor, subtotalElegible);
-                }
-            }
+            // 🔥 OBTENER EL DESCUENTO DESDE LOCALSTORAGE (SIN RECALCULAR)
+            const descuento = Number(localStorage.getItem('luma_last_descuento')) || 0;
+            console.log("📨 Descuento que se enviará al correo (desde localStorage):", descuento);
             
             const envioGratis = subtotal >= 99990;
             const costoEnvio = envioGratis ? 0 : 17500;
@@ -1296,7 +1276,7 @@ window.confirmarPedidoFinal = async function(datosStr) {
             
             const datosCorreo = {
                 nombre: datos.nombre,
-                email: user?.email || 'cliente@email.com',   // ✅ CORREGIDO: user (no userActual)
+                email: user?.email || 'cliente@email.com',
                 numeroPedido: numeroPedido,
                 subtotal: subtotal,
                 descuento: descuento,
@@ -1310,6 +1290,7 @@ window.confirmarPedidoFinal = async function(datosStr) {
             };
                         
             await enviarCorreoConfirmacion(datosCorreo);
+            localStorage.removeItem('luma_last_descuento');
             console.log('✅ Correo enviado a:', datosCorreo.email);
         } catch (errorCorreo) {
             console.error('❌ Error al enviar correo:', errorCorreo);
