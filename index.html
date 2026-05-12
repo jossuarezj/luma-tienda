@@ -25,272 +25,423 @@
     <!-- ePayco SDK -->
     <script src="https://checkout.epayco.co/checkout.js"></script>
     
-    <style>
-        @font-face {
+   <style>
+    @font-face {
         font-family: 'Gotham Bold';
         src: url('fonts/Gotham%20Bold/Gotham%20Bold.otf') format('opentype');
         font-weight: bold;
         font-style: normal;
-        }
-        @font-face {
+    }
+    @font-face {
         font-family: 'Eight One';
-            src: url('fonts/Eight%20One/Eight%20One.ttf') format('opentype');
-            font-weight: normal;
-            font-style: normal;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, p, a, span, li, button, input, select, textarea, .texto, .product-card p, .benefit-card p { 
-            font-family: 'Gotham Bold', 'Montserrat', sans-serif; 
-        }
+        src: url('fonts/Eight%20One/Eight%20One.ttf') format('opentype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, p, a, span, li, button, input, select, textarea, .texto, .product-card p, .benefit-card p { 
+        font-family: 'Gotham Bold', 'Montserrat', sans-serif; 
+    }
 
-        body { background: #F9F6F0; color: #4d4845; }
+    body { background: #F9F6F0; color: #4d4845; }
 
-        /* Los títulos mantienen su fuente original */
-        h1, h2, h3, h4 .titulo-filosofia { 
-            font-family: 'Eight One', 'Playfair Display', serif; 
-        }
-        
-        .btn-primary { 
-            background-color: #ffffff; 
-            color: #020000; 
-            border-radius: 40px;
-            transition: all 0.3s ease; 
-            cursor: pointer; 
-            font-weight: 500;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        }
-        .btn-primary:hover { 
-            background-color: #F5ECDC; 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-        }
-        .btn-secondary { 
-            background-color: transparent; 
-            color: #7B7369; 
-            border: 1.5px solid #7B7369;
-            border-radius: 40px;
-            transition: all 0.3s ease; 
-            cursor: pointer; 
-            font-weight: 500;
-        }
-        .btn-secondary:hover { 
-            background-color: #7B7369; 
-            color: white; 
-            transform: translateY(-2px);
-        }
-        
-        .product-card { 
-            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1); 
-            background: white; 
-            border-radius: 24px; 
-            overflow: hidden; 
-            cursor: pointer; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid #7B7369;
-        }
-        .product-card:hover { 
-            transform: translateY(-6px); 
-            box-shadow: 0 20px 30px -12px rgba(92,58,46,0.15);
-            border-color: #7B7369;
-        }
-        
-        .model-badge { 
-            position: absolute; 
-            top: 12px; 
-            left: 12px; 
-            background: #ffffff; 
-            color: rgb(0, 0, 0); 
-            padding: 4px 14px; 
-            border-radius: 30px; 
-            font-size: 10px; 
-            font-weight: 600; 
-            letter-spacing: 0.5px;
-            z-index: 10; 
-        }
-        
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in-up { animation: fadeInUp 0.6s ease-out; }
-        
-        @keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-        .bounce-animation { animation: bounce 0.4s ease; }
-        .modal-overlay { background: rgba(92,58,46,0.4); backdrop-filter: blur(4px); }
-        
-        .benefit-card { 
-            transition: all 0.3s ease; 
-            background: white; 
-            border-radius: 20px; 
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            border: 1px solid #F2EBDC;
-        }
-        .benefit-card:hover { 
-            transform: translateY(-4px); 
-            border-color: #7B7369;
-        }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #F2EBDC; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: oklab(#1F1D20); border-radius: 10px; }
-        
-        .user-dropdown { position: relative; }
-        .dropdown-menu { position: absolute; top: 45px; right: 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-width: 160px; z-index: 100; overflow: hidden; border: 1px solid #F2EBDC; }
-        .dropdown-menu a { display: block; padding: 10px 16px; color: #4d4845; text-decoration: none; transition: background 0.2s; font-size: 13px; }
-        .dropdown-menu a:hover { background: #F9F6F0; }
-        .dropdown-menu .logout { color: #7B7369; border-top: 1px solid #F2EBDC; }
-        
-        .notification { background-color: #7B7369 !important; color: white !important; border-radius: 40px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .notification i { color: white; }
-        button, [onclick] { cursor: pointer; }
-        
-        .btn-google {
-            background-color: white;
-            color: #757575;
-            border: 1px solid #D7C9B2;
-            border-radius: 40px;
-            transition: all 0.3s ease;
-        }
-        .btn-google:hover {
-            background-color: #F9F6F0;
-        }
-        .btn-facebook {
-            background-color: #1877F2;
-            color: white;
-            border: none;
-            border-radius: 40px;
-            transition: all 0.3s ease;
-        }
-        .btn-facebook:hover {
-            background-color: #1666d6;
-        }
-        
-        .section-title {
-            position: relative;
-            display: inline-block;
-        }
-        .section-title:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 2px;
-            background: #7B7369;
-            border-radius: 10px;
-        }
-        
-        .filter-btn {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .filter-btn-active {
-            background-color: #7B7369;
-            color: white;
-            border-color: #7B7369;
-        }
-        .filter-btn-inactive {
-            background-color: transparent;
-            color: #7B7369;
-            border-color: #7b7369;
-        }
-        .filter-btn-inactive:hover {
-            background-color: #7b7369;
-            color: white;
-        }
-        /* Mejoras para móvil en el modal de producto */
-        @media (max-width: 768px) {
+    /* Los títulos mantienen su fuente original */
+    h1, h2, h3, h4 .titulo-filosofia { 
+        font-family: 'Eight One', 'Playfair Display', serif; 
+    }
+    
+    .btn-primary { 
+        background-color: #ffffff; 
+        color: #020000; 
+        border-radius: 40px;
+        transition: all 0.3s ease; 
+        cursor: pointer; 
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .btn-primary:hover { 
+        background-color: #F5ECDC; 
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+    }
+    .btn-secondary { 
+        background-color: transparent; 
+        color: #7B7369; 
+        border: 1.5px solid #7B7369;
+        border-radius: 40px;
+        transition: all 0.3s ease; 
+        cursor: pointer; 
+        font-weight: 500;
+    }
+    .btn-secondary:hover { 
+        background-color: #7B7369; 
+        color: white; 
+        transform: translateY(-2px);
+    }
+    
+    .product-card { 
+        transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1); 
+        background: white; 
+        border-radius: 24px; 
+        overflow: hidden; 
+        cursor: pointer; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        border: 1px solid #7B7369;
+    }
+    .product-card:hover { 
+        transform: translateY(-6px); 
+        box-shadow: 0 20px 30px -12px rgba(92,58,46,0.15);
+        border-color: #7B7369;
+    }
+    
+    .model-badge { 
+        position: absolute; 
+        top: 12px; 
+        left: 12px; 
+        background: #ffffff; 
+        color: rgb(0, 0, 0); 
+        padding: 4px 14px; 
+        border-radius: 30px; 
+        font-size: 10px; 
+        font-weight: 600; 
+        letter-spacing: 0.5px;
+        z-index: 10; 
+    }
+    
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.6s ease-out; }
+    
+    @keyframes bounce { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+    .bounce-animation { animation: bounce 0.4s ease; }
+    .modal-overlay { background: rgba(92,58,46,0.4); backdrop-filter: blur(4px); }
+    
+    .benefit-card { 
+        transition: all 0.3s ease; 
+        background: white; 
+        border-radius: 20px; 
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        border: 1px solid #F2EBDC;
+    }
+    .benefit-card:hover { 
+        transform: translateY(-4px); 
+        border-color: #7B7369;
+    }
+    
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #F2EBDC; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: oklab(#1F1D20); border-radius: 10px; }
+    
+    .user-dropdown { position: relative; }
+    .dropdown-menu { position: absolute; top: 45px; right: 0; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-width: 160px; z-index: 100; overflow: hidden; border: 1px solid #F2EBDC; }
+    .dropdown-menu a { display: block; padding: 10px 16px; color: #4d4845; text-decoration: none; transition: background 0.2s; font-size: 13px; }
+    .dropdown-menu a:hover { background: #F9F6F0; }
+    .dropdown-menu .logout { color: #7B7369; border-top: 1px solid #F2EBDC; }
+    
+    .notification { background-color: #7B7369 !important; color: white !important; border-radius: 40px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .notification i { color: white; }
+    button, [onclick] { cursor: pointer; }
+    
+    .btn-google {
+        background-color: white;
+        color: #757575;
+        border: 1px solid #D7C9B2;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    .btn-google:hover {
+        background-color: #F9F6F0;
+    }
+    .btn-facebook {
+        background-color: #1877F2;
+        color: white;
+        border: none;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+    }
+    .btn-facebook:hover {
+        background-color: #1666d6;
+    }
+    
+    .section-title {
+        position: relative;
+        display: inline-block;
+    }
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 2px;
+        background: #7B7369;
+        border-radius: 10px;
+    }
+    
+    .filter-btn {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .filter-btn-active {
+        background-color: #7B7369;
+        color: white;
+        border-color: #7B7369;
+    }
+    .filter-btn-inactive {
+        background-color: transparent;
+        color: #7B7369;
+        border-color: #7b7369;
+    }
+    .filter-btn-inactive:hover {
+        background-color: #7b7369;
+        color: white;
+    }
+    
+    /* Mejoras para móvil en el modal de producto */
+    @media (max-width: 768px) {
         #productModal .overflow-y-auto {
-        -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch;
         }
-    
         .talla-modal-btn {
-        min-width: 55px;
+            min-width: 55px;
         }
-    
         #productModalContent .flex.gap-2 {
-        scrollbar-width: thin;
+            scrollbar-width: thin;
         }
-        }
-        /* Corrección para las imágenes de productos */
-        .product-card .relative.h-80 {
+    }
+    
+    /* Corrección para las imágenes de productos */
+    .product-card .relative.h-80 {
         height: 320px;
         overflow: hidden;
         background-color: #F9F6F0;
-        }
-
-        .product-card img {
+    }
+    .product-card img {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* Cambia de 'cover' a 'contain' para que se vea la imagen completa */
         object-position: center;
         transition: transform 0.5s ease;
-        }
-
-        /* Para móvil, reducir la altura */
-        @media (max-width: 640px) {
-            .product-card .relative.h-80 {
-                height: 200px;  /* antes 250px */
-            }
-            .product-card .p-5 {
-                padding: 12px;  /* reduce padding interior */
-            }
-            .product-card h3 {
-                font-size: 14px;
-            }
-            .product-card .text-xl {
-                font-size: 16px;
-            }
-        }
-
-        /* Para tablet */
-        @media (min-width: 641px) and (max-width: 1024px) {
+    }
+    
+    /* Para móvil, reducir la altura de las tarjetas de producto */
+    @media (max-width: 640px) {
         .product-card .relative.h-80 {
-        height: 280px;
+            height: 200px;
+        }
+        .product-card .p-5 {
+            padding: 12px;
+        }
+        .product-card h3 {
+            font-size: 14px;
+        }
+        .product-card .text-xl {
+            font-size: 16px;
         }
     }
-        /* Ajustes del modal de packs - imagen compacta */
-            #previewImagen {
-                max-height: 200px;
-                overflow: hidden;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: #F9F6F0;
-                border-radius: 12px;
-                padding: 6px;
-            }
-            #previewImg {
-                max-width: 100%;
-                max-height: 180px;
-                object-fit: contain;
-            }
-            #imageThumbnails {
-                scrollbar-width: thin;
-            }
-            #imageThumbnails img {
-                width: 40px;
-                height: 40px;
-                object-fit: cover;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: transform 0.2s;
-            }
-            #imageThumbnails img:hover {
-                transform: scale(1.05);
-            }
-            @media (max-width: 640px) {
-                #previewImagen {
-                    max-height: 160px;
-                }
-                #previewImg {
-                    max-height: 140px;
-                }
-            }
-    </style>
+    
+    /* Para tablet */
+    @media (min-width: 641px) and (max-width: 1024px) {
+        .product-card .relative.h-80 {
+            height: 280px;
+        }
+    }
+    
+    /* Ajustes del modal de packs - imagen grande y centrada */
+    #previewImagen {
+        background: #F9F6F0;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+    #previewImg {
+        max-width: 100%;
+        max-height: 280px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+    }
+    #imageThumbnails {
+        scrollbar-width: thin;
+    }
+    #imageThumbnails img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    #imageThumbnails img:hover {
+        transform: scale(1.05);
+    }
+    @media (max-width: 640px) {
+        #previewImg {
+            max-height: 220px;
+            display: block;
+            margin: 0 auto;
+        }
+        /* Asegurar que el placeholder tenga el mismo tamaño que la imagen */
+        #previewPlaceholder {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+    
+    /* Ajustes para el header en móvil (evitar que se desborde) */
+    @media (max-width: 768px) {
+        header .container {
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        header .flex.items-center.space-x-4 {
+            gap: 0.5rem;
+        }
+        #userName {
+            display: none; /* ocultar nombre en móvil para ganar espacio */
+        }
+        header .hidden.md\\:flex {
+            display: none; /* menú desktop oculto en móvil, ya está */
+        }
+        header .md\\:hidden {
+            display: block;
+        }
+    }
+    
+    /* Ajustes para el modal de packs en móvil (evitar que se vea estrecho) */
+    @media (max-width: 640px) {
+        .relative.bg-white.rounded-2xl {
+            width: calc(100% - 16px) !important;
+            margin-left: 8px !important;
+            margin-right: 8px !important;
+        }
+        .grid-cols-1.gap-4 > .bg-white.rounded-2xl {
+            padding: 12px;
+        }
+    }
+    
+    /* Estilos adicionales para móvil y focus (redes sociales) */
+    .red-social {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .red-social:focus {
+        outline: none;
+    }
+    .red-social:focus .icon-circle {
+        background-color: #7B7369 !important;
+        transform: scale(1.05);
+    }
+    .red-social:focus i {
+        color: white !important;
+    }
+    .red-social:focus span {
+        color: #7B7369 !important;
+    }
+    
+    /* Efectos para dispositivos táctiles (móvil) */
+    @media (max-width: 768px) {
+        .red-social:active .icon-circle {
+            background-color: #7B7369 !important;
+            transform: scale(0.95);
+            transition: all 0.1s ease;
+        }
+        .red-social:active i {
+            color: white !important;
+        }
+        .red-social:active span {
+            color: #7B7369 !important;
+        }
+        .red-social:hover .icon-circle {
+            background-color: #7B7369 !important;
+        }
+        .red-social:hover i {
+            color: white !important;
+        }
+        .red-social:hover span {
+            color: #7B7369 !important;
+        }
+    }
+    
+    /* Efectos para PC (mouse) */
+    @media (min-width: 769px) {
+        .red-social:hover .icon-circle {
+            background-color: #7B7369 !important;
+            transform: scale(1.05);
+        }
+        .red-social:hover i {
+            color: white !important;
+        }
+        .red-social:hover span {
+            color: #7B7369 !important;
+        }
+    }
+
+    /* Carrusel para productos destacados en móvil */
+    .carrusel-container {
+        position: relative;
+        overflow: hidden;
+        padding: 0 20px;
+    }
+    .carrusel-track {
+        display: flex;
+        transition: transform 0.3s ease;
+    }
+    .carrusel-slide {
+        flex: 0 0 50%;
+        padding: 0 8px;
+    }
+    .carrusel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #7B7369;
+        color: white;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .carrusel-btn.prev {
+        left: -10px;
+    }
+    .carrusel-btn.next {
+        right: -10px;
+    }
+    .carrusel-btn:hover {
+        background: #4D4845;
+    }
+    /* En PC, ocultar flechas y mostrar grid normal */
+    @media (min-width: 768px) {
+        .carrusel-btn {
+            display: none;
+        }
+        .carrusel-track {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        .carrusel-slide {
+            flex: none;
+            padding: 0;
+        }
+    }
+</style>
 </head>
 <body>
 
@@ -305,7 +456,7 @@
 </div>
 
 <!-- Header -->
-<header class="fixed top-10 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-sm z-40">
+<header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-sm z-40">
     <div class="container mx-auto px-4 py-2 flex justify-between items-center flex-wrap gap-4">
         <!-- Logo + eslogan horizontal -->
         <div class="flex items-center gap-3 flex-shrink-0">
@@ -874,7 +1025,7 @@
         <!-- Grid: 2 columnas en PC, 1 en móvil -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             
-            <!-- PANEL IZQUIERDO: Selección de producto (mejorado visualmente) -->
+            <!-- PANEL IZQUIERDO: Selección de producto -->
             <div class="bg-[#F9F6F0] rounded-2xl p-4 md:p-5 shadow-inner">
                 <h3 class="font-bold text-base md:text-lg mb-3 flex items-center gap-2">
                     <i class="fas fa-plus-circle text-[#7B7369] text-sm md:text-xl"></i>
@@ -882,20 +1033,18 @@
                 </h3>
                 
                 <!-- Vista previa de imagen con carrusel -->
-                    <div class="bg-white rounded-xl p-2 mb-4 border border-[#E8DDD0]">
-                        <div class="relative">
-                            <img id="previewImg" src="" class="w-full h-40 md:h-52 object-contain rounded-lg hidden">
-                            <div id="previewPlaceholder" class="text-center text-gray-400 py-8">
-                                <i class="fas fa-image text-5xl mb-2"></i>
-                                <p class="text-sm">Vista previa</p>
-                            </div>
-                            <!-- Botones para cambiar imagen -->
-                            <button id="prevImageBtn" class="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">‹</button>
-                            <button id="nextImageBtn" class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">›</button>
+                <div class="bg-white rounded-xl p-2 mb-4 border border-[#E8DDD0]">
+                    <div class="relative w-full">
+                        <img id="previewImg" src="" class="w-full object-contain rounded-lg hidden">
+                        <div id="previewPlaceholder" class="text-center text-gray-400 py-8">
+                            <i class="fas fa-image text-5xl mb-2"></i>
+                            <p class="text-sm">Vista previa</p>
                         </div>
-                        <!-- Miniaturas de imágenes -->
-                        <div id="imageThumbnails" class="flex gap-1 mt-2 overflow-x-auto pb-1 hidden"></div>
+                        <button id="prevImageBtn" class="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">‹</button>
+                        <button id="nextImageBtn" class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">›</button>
                     </div>
+                    <div id="imageThumbnails" class="flex gap-1 mt-2 overflow-x-auto pb-1 hidden"></div>
+                </div>
                                     
                 <!-- Selector Referencia -->
                 <div class="mb-4">
@@ -905,7 +1054,7 @@
                     </select>
                 </div>
                 
-                <!-- Selector Color (mejorado con badges) -->
+                <!-- Selector Color -->
                 <div class="mb-4">
                     <label class="block text-xs md:text-sm font-semibold mb-1 text-[#4D4845]">Color *</label>
                     <div class="grid grid-cols-4 gap-2">
@@ -932,7 +1081,7 @@
                 </button>
             </div>
             
-            <!-- PANEL DERECHO: Lista de productos seleccionados (mejorado con grid y fotos) -->
+            <!-- PANEL DERECHO: Lista de productos seleccionados -->
             <div class="bg-white rounded-2xl p-4 md:p-5 border border-[#E8DDD0] shadow-sm">
                 <h3 class="font-bold text-base md:text-lg mb-3 flex items-center gap-2">
                     <i class="fas fa-list-check text-[#7B7369] text-sm md:text-xl"></i>
@@ -941,7 +1090,6 @@
                 </h3>
                 
                 <div id="packProductosList" class="space-y-3 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-1">
-                    <!-- Aquí se cargarán los productos con imagen mediana -->
                     <div class="text-center text-gray-400 py-8">
                         <i class="fas fa-inbox text-4xl mb-2"></i>
                         <p class="text-sm">No hay productos</p>

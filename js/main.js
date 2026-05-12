@@ -404,42 +404,48 @@ function actualizarVistaPrevia() {
 function mostrarImagenActual() {
     if (!imagenesProductoActual.length) return;
     const previewImg = document.getElementById('previewImg');
-    const previewPlaceholder = document.getElementById('previewPlaceholder');
-    if (previewImg) {
-        previewImg.src = imagenesProductoActual[indiceImagenActual];
-        previewImg.classList.remove('hidden');
-        if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
-        
-        // Lightbox (zoom) al hacer clic
-        previewImg.onclick = (e) => {
-            e.stopPropagation();
-            if (typeof abrirLightbox === 'function') {
-                abrirLightbox(imagenesProductoActual, indiceImagenActual);
-            }
-        };
-        previewImg.style.cursor = 'pointer';
-        
-        // Swipe táctil para cambiar imagen
-        let touchStartX = 0;
-        previewImg.ontouchstart = (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            e.preventDefault(); // Evita scroll mientras se desliza
-        };
-        previewImg.ontouchend = (e) => {
-            const touchEndX = e.changedTouches[0].screenX;
-            const diffX = touchEndX - touchStartX;
-            if (Math.abs(diffX) > 50) {
-                if (diffX > 0) {
-                    window.cambiarImagenPack(indiceImagenActual - 1);
-                } else {
-                    window.cambiarImagenPack(indiceImagenActual + 1);
-                }
-            }
-            touchStartX = 0;
-        };
+    const placeholder = document.getElementById('previewPlaceholder');
+    if (!previewImg) return;
+    
+    // Asignar la imagen
+    previewImg.src = imagenesProductoActual[indiceImagenActual];
+    
+    // Forzar visibilidad: quitar hidden y mostrar como bloque
+    previewImg.classList.remove('hidden');
+    previewImg.style.display = 'block';
+    previewImg.style.maxWidth = '100%';
+    previewImg.style.margin = '0 auto';
+    
+    // Ocultar el placeholder con estilos en línea (más fuerte que clases)
+    if (placeholder) {
+        placeholder.classList.add('hidden');
+        placeholder.style.display = 'none';
     }
     
-    // Resaltar miniatura activa
+    // Lightbox y swipe (como ya lo tienes)
+    const abrirLightboxHandler = (e) => {
+        e.stopPropagation();
+        if (typeof abrirLightbox === 'function') {
+            abrirLightbox(imagenesProductoActual, indiceImagenActual);
+        }
+    };
+    previewImg.onclick = abrirLightboxHandler;
+    
+    // Swipe táctil (para móvil)
+    let touchStartX = 0;
+    previewImg.ontouchstart = (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    };
+    previewImg.ontouchend = (e) => {
+        const diff = e.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) cambiarImagenPack(indiceImagenActual - 1);
+            else cambiarImagenPack(indiceImagenActual + 1);
+        }
+    };
+    previewImg.style.cursor = 'pointer';
+    
+    // Actualizar miniaturas (opcional)
     const thumbImgs = document.querySelectorAll('#imageThumbnails img');
     thumbImgs.forEach((img, i) => {
         if (i === indiceImagenActual) {
@@ -450,6 +456,8 @@ function mostrarImagenActual() {
             img.classList.add('border-transparent');
         }
     });
+    
+    console.log("✅ Imagen actual mostrada, placeholder oculto");
 }
 
 // === Cambiar imagen desde miniaturas, botones o swipe ===
