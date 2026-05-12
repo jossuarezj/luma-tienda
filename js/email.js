@@ -2,7 +2,6 @@
 export async function enviarCorreoConfirmacion(datosCompra) {
     console.log("📧 Enviando correo de confirmación...");
 
-    // Sanitizar para evitar errores en EmailJS
     function sanitize(str) {
         if (!str) return '';
         return String(str)
@@ -16,7 +15,6 @@ export async function enviarCorreoConfirmacion(datosCompra) {
             .trim();
     }
 
-    // 1. Construir HTML de productos
     let productosHTML = '';
     let productosArray = datosCompra.productos || [];
 
@@ -38,9 +36,19 @@ export async function enviarCorreoConfirmacion(datosCompra) {
     } else {
         productosHTML = '<p>No hay productos registrados</p>';
     }
-    productosHTML = productosHTML.replace(/\n/g, '').replace(/\s{2,}/g, ' ');
 
-    // 2. Dirección
+    // ===== AGREGAR DESCUENTO COMO PARTE DE LOS PRODUCTOS =====
+    const descuentoNum = Number(datosCompra.descuento) || 0;
+    if (descuentoNum > 0) {
+        productosHTML += `
+            <div style="display:flex;justify-content:space-between;padding:8px 0;color:#27ae60; font-weight:500;">
+                <span>🎉 Descuento aplicado</span>
+                <span> -$${descuentoNum.toLocaleString()}</span>
+            </div>
+        `;
+    }
+
+    // Dirección
     let direccion = 'No especificada';
     let ciudad = 'No especificada';
     if (datosCompra.datosEnvio) {
@@ -51,14 +59,13 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         ciudad = sanitize(datosCompra.ciudad) || ciudad;
     }
 
-    // 3. Valores numéricos (sin formato para EmailJS)
+    // Valores numéricos
     const subtotalNum = Number(datosCompra.subtotal) || 0;
-    const descuentoNum = Number(datosCompra.descuento) || 0;
     let costoEnvioNum = Number(datosCompra.costoEnvio) || 0;
     if (datosCompra.envioGratis) costoEnvioNum = 0;
     const totalNum = Number(datosCompra.total) || 0;
 
-    // 4. Parámetros para EmailJS (solo números sin símbolos, el símbolo lo pone la plantilla)
+    // Parámetros para EmailJS (SIN descuento por separado)
     const templateParams = {
         email_cliente: datosCompra.email || 'cliente@email.com',
         nombre: sanitize(datosCompra.nombre || datosCompra.usuario || 'Cliente'),
@@ -72,12 +79,7 @@ export async function enviarCorreoConfirmacion(datosCompra) {
         productos: productosHTML
     };
 
-    // Solo agregar descuento si es mayor a 0 (NO enviar si es 0)
-    if (descuentoNum > 0) {
-        templateParams.descuento = descuentoNum.toLocaleString();
-    }
-
-    // Eliminar cualquier undefined/null
+    // Eliminar undefined/null
     Object.keys(templateParams).forEach(k => {
         if (templateParams[k] === undefined || templateParams[k] === null) delete templateParams[k];
     });
