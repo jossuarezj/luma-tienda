@@ -324,6 +324,15 @@ function obtenerProductoPorReferenciaYColor(referencia, colorNombre) {
     return productos.find(p => p.NOMBRE === referencia && p.COLOR === colorValue);
 }
 
+// Variables globales (asegurar que existen)
+let imagenesProductoActual = [];
+let indiceImagenActual = 0;
+
+// === Variables globales (asegúrate de que existan) ===
+let imagenesProductoActual = [];
+let indiceImagenActual = 0;
+
+// === Actualizar vista previa al seleccionar referencia y color ===
 function actualizarVistaPrevia() {
     const referencia = document.getElementById('selectReferencia')?.value;
     const color = document.getElementById('selectColor')?.value;
@@ -333,9 +342,14 @@ function actualizarVistaPrevia() {
     const prevBtn = document.getElementById('prevImageBtn');
     const nextBtn = document.getElementById('nextImageBtn');
     
+    // Limpiar cualquier imagen previa y mostrar placeholder
+    if (previewImg) {
+        previewImg.classList.add('hidden');
+        previewImg.src = '';
+    }
+    if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+    
     if (!referencia || !color) {
-        if (previewImg) previewImg.classList.add('hidden');
-        if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
         if (thumbContainer) thumbContainer.classList.add('hidden');
         if (prevBtn) prevBtn.classList.add('hidden');
         if (nextBtn) nextBtn.classList.add('hidden');
@@ -343,42 +357,58 @@ function actualizarVistaPrevia() {
     }
     
     const producto = obtenerProductoPorReferenciaYColor(referencia, color);
-    if (producto && producto.IMAGENES && producto.IMAGENES.length > 0) {
-        imagenesProductoActual = producto.IMAGENES;
-        indiceImagenActual = 0;
-        mostrarImagenActual();
-        
-        // Mostrar miniaturas
-        if (thumbContainer) {
-            thumbContainer.innerHTML = imagenesProductoActual.map((img, idx) => `
-                <img src="${img}" class="w-10 h-10 object-cover rounded cursor-pointer border-2 ${idx === 0 ? 'border-[#4d4845]' : 'border-transparent'}" 
-                    onclick="cambiarImagenPack(${idx})" 
-                    ondblclick="abrirLightbox(imagenesProductoActual, ${idx})">
-            `).join('');
-            thumbContainer.classList.remove('hidden');
+    if (producto) {
+        // Priorizar array de imágenes
+        if (producto.IMAGENES && producto.IMAGENES.length > 0) {
+            imagenesProductoActual = producto.IMAGENES;
+            indiceImagenActual = 0;
+            // Ocultar placeholder inmediatamente y mostrar imagen
+            previewPlaceholder.classList.add('hidden');
+            mostrarImagenActual();
+            
+            // Generar miniaturas
+            if (thumbContainer) {
+                thumbContainer.innerHTML = imagenesProductoActual.map((img, idx) => `
+                    <img src="${img}" class="w-10 h-10 object-cover rounded cursor-pointer border-2 ${idx === 0 ? 'border-[#4d4845]' : 'border-transparent'}" 
+                         onclick="cambiarImagenPack(${idx})" 
+                         ondblclick="abrirLightbox(imagenesProductoActual, ${idx})">
+                `).join('');
+                thumbContainer.classList.remove('hidden');
+            }
+            if (prevBtn && nextBtn) {
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+                prevBtn.onclick = () => cambiarImagenPack(indiceImagenActual - 1);
+                nextBtn.onclick = () => cambiarImagenPack(indiceImagenActual + 1);
+            }
+        } else if (producto.IMAGEN) {
+            // Caso de una sola imagen
+            imagenesProductoActual = [producto.IMAGEN];
+            indiceImagenActual = 0;
+            previewPlaceholder.classList.add('hidden');
+            mostrarImagenActual();
+            if (thumbContainer) thumbContainer.classList.add('hidden');
+            if (prevBtn) prevBtn.classList.add('hidden');
+            if (nextBtn) nextBtn.classList.add('hidden');
+        } else {
+            // No hay imagen
+            previewPlaceholder.classList.remove('hidden');
+            previewImg.classList.add('hidden');
+            if (thumbContainer) thumbContainer.classList.add('hidden');
+            if (prevBtn) prevBtn.classList.add('hidden');
+            if (nextBtn) nextBtn.classList.add('hidden');
         }
-        if (prevBtn && nextBtn) {
-            prevBtn.classList.remove('hidden');
-            nextBtn.classList.remove('hidden');
-            prevBtn.onclick = () => cambiarImagenPack(indiceImagenActual - 1);
-            nextBtn.onclick = () => cambiarImagenPack(indiceImagenActual + 1);
-        }
-    } else if (producto && producto.IMAGEN) {
-        imagenesProductoActual = [producto.IMAGEN];
-        indiceImagenActual = 0;
-        mostrarImagenActual();
-        if (thumbContainer) thumbContainer.classList.add('hidden');
-        if (prevBtn) prevBtn.classList.add('hidden');
-        if (nextBtn) nextBtn.classList.add('hidden');
     } else {
-        if (previewImg) previewImg.classList.add('hidden');
-        if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+        // Producto no encontrado
+        previewPlaceholder.classList.remove('hidden');
+        previewImg.classList.add('hidden');
         if (thumbContainer) thumbContainer.classList.add('hidden');
         if (prevBtn) prevBtn.classList.add('hidden');
         if (nextBtn) nextBtn.classList.add('hidden');
     }
 }
 
+// === Mostrar la imagen actual con lightbox y swipe ===
 function mostrarImagenActual() {
     if (!imagenesProductoActual.length) return;
     const previewImg = document.getElementById('previewImg');
@@ -386,15 +416,37 @@ function mostrarImagenActual() {
     if (previewImg) {
         previewImg.src = imagenesProductoActual[indiceImagenActual];
         previewImg.classList.remove('hidden');
-        previewPlaceholder.classList.add('hidden');
-        // 🔥 Agregar evento click para abrir lightbox con todas las imágenes
-        previewImg.onclick = () => {
+        if (previewPlaceholder) previewPlaceholder.classList.add('hidden');
+        
+        // Lightbox (zoom) al hacer clic
+        previewImg.onclick = (e) => {
+            e.stopPropagation();
             if (typeof abrirLightbox === 'function') {
                 abrirLightbox(imagenesProductoActual, indiceImagenActual);
             }
         };
         previewImg.style.cursor = 'pointer';
+        
+        // Swipe táctil para cambiar imagen
+        let touchStartX = 0;
+        previewImg.ontouchstart = (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            e.preventDefault(); // Evita scroll mientras se desliza
+        };
+        previewImg.ontouchend = (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const diffX = touchEndX - touchStartX;
+            if (Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    window.cambiarImagenPack(indiceImagenActual - 1);
+                } else {
+                    window.cambiarImagenPack(indiceImagenActual + 1);
+                }
+            }
+            touchStartX = 0;
+        };
     }
+    
     // Resaltar miniatura activa
     const thumbImgs = document.querySelectorAll('#imageThumbnails img');
     thumbImgs.forEach((img, i) => {
@@ -408,6 +460,7 @@ function mostrarImagenActual() {
     });
 }
 
+// === Cambiar imagen desde miniaturas, botones o swipe ===
 window.cambiarImagenPack = function(nuevoIndice) {
     if (!imagenesProductoActual.length) return;
     if (nuevoIndice < 0) nuevoIndice = imagenesProductoActual.length - 1;
