@@ -324,14 +324,6 @@ function obtenerProductoPorReferenciaYColor(referencia, colorNombre) {
     return productos.find(p => p.NOMBRE === referencia && p.COLOR === colorValue);
 }
 
-// Variables globales (asegurar que existen)
-let imagenesProductoActual = [];
-let indiceImagenActual = 0;
-
-// === Variables globales (asegúrate de que existan) ===
-let imagenesProductoActual = [];
-let indiceImagenActual = 0;
-
 // === Actualizar vista previa al seleccionar referencia y color ===
 function actualizarVistaPrevia() {
     const referencia = document.getElementById('selectReferencia')?.value;
