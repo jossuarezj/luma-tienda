@@ -9,6 +9,8 @@ let usedCoupon = localStorage.getItem('lumaCouponUsed') === 'true';
 let packEnSeleccion = { cantidad: 0, productosSeleccionados: [] };
 let cuponAplicado = localStorage.getItem('cuponAplicado') || null;
 let cuponInfo = null;
+let imagenesProductoActual = [];   // array de URLs de imágenes del producto seleccionado
+let indiceImagenActual = 0;       // índice de la imagen mostrada
 
 // ✅ FORZAR ACTUALIZACIÓN DE usedCoupon POR EMAIL
 const userActual = getCurrentUser();
@@ -327,22 +329,83 @@ function actualizarVistaPrevia() {
     const color = document.getElementById('selectColor')?.value;
     const previewImg = document.getElementById('previewImg');
     const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const thumbContainer = document.getElementById('imageThumbnails');
+    const prevBtn = document.getElementById('prevImageBtn');
+    const nextBtn = document.getElementById('nextImageBtn');
     
-    if (referencia && color && previewImg && previewPlaceholder) {
-        const producto = obtenerProductoPorReferenciaYColor(referencia, color);
-        if (producto && producto.IMAGEN) {
-            previewImg.src = producto.IMAGEN;
-            previewImg.classList.remove('hidden');
-            previewImg.style.objectFit = 'contain';
-            previewImg.classList.add('cursor-pointer');
-            previewImg.onclick = () => verImagenPack(producto.IMAGEN);
-            previewPlaceholder.classList.add('hidden');
-            return;
-        }
+    if (!referencia || !color) {
+        if (previewImg) previewImg.classList.add('hidden');
+        if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+        if (thumbContainer) thumbContainer.classList.add('hidden');
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+        return;
     }
-    if (previewImg) previewImg.classList.add('hidden');
-    if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+    
+    const producto = obtenerProductoPorReferenciaYColor(referencia, color);
+    if (producto && producto.IMAGENES && producto.IMAGENES.length > 0) {
+        imagenesProductoActual = producto.IMAGENES;
+        indiceImagenActual = 0;
+        mostrarImagenActual();
+        
+        // Mostrar miniaturas
+        if (thumbContainer) {
+            thumbContainer.innerHTML = imagenesProductoActual.map((img, idx) => `
+                <img src="${img}" class="w-10 h-10 object-cover rounded cursor-pointer border-2 ${idx === 0 ? 'border-[#4d4845]' : 'border-transparent'}" onclick="cambiarImagenPack(${idx})">
+            `).join('');
+            thumbContainer.classList.remove('hidden');
+        }
+        if (prevBtn && nextBtn) {
+            prevBtn.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            prevBtn.onclick = () => cambiarImagenPack(indiceImagenActual - 1);
+            nextBtn.onclick = () => cambiarImagenPack(indiceImagenActual + 1);
+        }
+    } else if (producto && producto.IMAGEN) {
+        imagenesProductoActual = [producto.IMAGEN];
+        indiceImagenActual = 0;
+        mostrarImagenActual();
+        if (thumbContainer) thumbContainer.classList.add('hidden');
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+    } else {
+        if (previewImg) previewImg.classList.add('hidden');
+        if (previewPlaceholder) previewPlaceholder.classList.remove('hidden');
+        if (thumbContainer) thumbContainer.classList.add('hidden');
+        if (prevBtn) prevBtn.classList.add('hidden');
+        if (nextBtn) nextBtn.classList.add('hidden');
+    }
 }
+
+function mostrarImagenActual() {
+    if (!imagenesProductoActual.length) return;
+    const previewImg = document.getElementById('previewImg');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    if (previewImg) {
+        previewImg.src = imagenesProductoActual[indiceImagenActual];
+        previewImg.classList.remove('hidden');
+        previewPlaceholder.classList.add('hidden');
+    }
+    // Resaltar miniatura activa
+    const thumbImgs = document.querySelectorAll('#imageThumbnails img');
+    thumbImgs.forEach((img, i) => {
+        if (i === indiceImagenActual) {
+            img.classList.add('border-[#4d4845]', 'border-2');
+            img.classList.remove('border-transparent');
+        } else {
+            img.classList.remove('border-[#4d4845]', 'border-2');
+            img.classList.add('border-transparent');
+        }
+    });
+}
+
+window.cambiarImagenPack = function(nuevoIndice) {
+    if (!imagenesProductoActual.length) return;
+    if (nuevoIndice < 0) nuevoIndice = imagenesProductoActual.length - 1;
+    if (nuevoIndice >= imagenesProductoActual.length) nuevoIndice = 0;
+    indiceImagenActual = nuevoIndice;
+    mostrarImagenActual();
+};
 
 window.seleccionarColor = function(color, bgColor, event) {
     colorSeleccionadoPack = color;
@@ -353,11 +416,6 @@ window.seleccionarColor = function(color, bgColor, event) {
     });
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('ring-2', 'ring-[#7B7369]', 'scale-105');
-    } else {
-        // fallback: buscar por texto
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            if (btn.innerText === color) btn.classList.add('ring-2', 'ring-[#7B7369]', 'scale-105');
-        });
     }
     actualizarVistaPrevia();
 };
@@ -366,7 +424,6 @@ window.seleccionarTallaPack = function(talla, event) {
     tallaSeleccionadaPack = talla;
     const tallaInput = document.getElementById('selectTalla');
     if (tallaInput) tallaInput.value = talla;
-    
     document.querySelectorAll('.talla-pack-btn').forEach(btn => {
         btn.classList.remove('bg-[#F5ECDC]', 'text-[#4d4845]');
         btn.classList.add('bg-white', 'text-[#4d4845]', 'border', 'border-[#7B7369]');

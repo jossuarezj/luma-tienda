@@ -252,20 +252,44 @@
         height: 280px;
         }
     }
-    /* Ajuste para vista previa de imágenes en packs */
-        #previewImagen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+        /* Ajustes del modal de packs - imagen compacta */
+            #previewImagen {
+                max-height: 200px;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #F9F6F0;
+                border-radius: 12px;
+                padding: 6px;
             }
-
-        #previewImg {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-        }
+            #previewImg {
+                max-width: 100%;
+                max-height: 180px;
+                object-fit: contain;
+            }
+            #imageThumbnails {
+                scrollbar-width: thin;
+            }
+            #imageThumbnails img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+            #imageThumbnails img:hover {
+                transform: scale(1.05);
+            }
+            @media (max-width: 640px) {
+                #previewImagen {
+                    max-height: 160px;
+                }
+                #previewImg {
+                    max-height: 140px;
+                }
+            }
     </style>
 </head>
 <body>
@@ -857,15 +881,22 @@
                     <span>Agregar producto</span>
                 </h3>
                 
-                <!-- Vista previa de imagen con tamaño mejorado -->
-                <div id="previewImagen" class="bg-white rounded-xl h-40 md:h-56 flex items-center justify-center mb-4 border-2 border-dashed border-[#D7C9B2] overflow-hidden shadow-sm">
-                    <img id="previewImg" src="" class="w-full h-full object-contain hidden">
-                    <div id="previewPlaceholder" class="text-center text-gray-400">
-                        <i class="fas fa-image text-4xl md:text-6xl mb-2"></i>
-                        <p class="text-xs md:text-sm">Vista previa</p>
+                <!-- Vista previa de imagen con carrusel -->
+                    <div class="bg-white rounded-xl p-2 mb-4 border border-[#E8DDD0]">
+                        <div class="relative">
+                            <img id="previewImg" src="" class="w-full h-40 md:h-52 object-contain rounded-lg hidden">
+                            <div id="previewPlaceholder" class="text-center text-gray-400 py-8">
+                                <i class="fas fa-image text-5xl mb-2"></i>
+                                <p class="text-sm">Vista previa</p>
+                            </div>
+                            <!-- Botones para cambiar imagen -->
+                            <button id="prevImageBtn" class="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">‹</button>
+                            <button id="nextImageBtn" class="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center shadow-md hidden">›</button>
+                        </div>
+                        <!-- Miniaturas de imágenes -->
+                        <div id="imageThumbnails" class="flex gap-1 mt-2 overflow-x-auto pb-1 hidden"></div>
                     </div>
-                </div>
-                
+                                    
                 <!-- Selector Referencia -->
                 <div class="mb-4">
                     <label class="block text-xs md:text-sm font-semibold mb-1 text-[#4D4845]">Referencia *</label>
