@@ -347,7 +347,7 @@ window.enviarGuiaPorWhatsApp = function(telefono, numeroPedido, numeroGuia, tran
     else if (transportadora === 'Envíos Nacionales') linkRastreo = `https://www.enviosnacionales.com/tracking/${numeroGuia}`;
     else if (transportadora === 'Coordinadora') linkRastreo = `https://www.coordinadora.com/rastreo/?guia=${numeroGuia}`;
     const primerNombre = nombreCliente ? nombreCliente.split(' ')[0] : 'Cliente';
-    const mensaje = `*L U M A*\n\n¡Hola ${primerNombre}! Tu pedido *${numeroPedido}* ya está en camino.\n\n*GUÍA:* ${numeroGuia}\n*TRANSPORTADORA:* ${transportadora}\n\n*RASTREA AQUÍ:*\n${linkRastreo}\n\n*O VISITA:*\nhttps://jossuarezj.github.io/luma-tienda/seguimiento.html?pedido=${numeroPedido}`;
+    const mensaje = `*L U M A*\n\n¡Hola ${primerNombre}! Tu pedido *${numeroPedido}* ya está en camino.\n\n*GUÍA:* ${numeroGuia}\n*TRANSPORTADORA:* ${transportadora}\n\n*RASTREA AQUÍ:*\n${linkRastreo}\n\n*O VISITA:*\nhttps://lumacolombia.seguimiento.html?pedido=${numeroPedido}`;
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
 };
 
