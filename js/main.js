@@ -1641,17 +1641,7 @@ if (menuBtn && mobileMenu) {
             }
         }
     });
-    
-    let scrollTimeout;
-    window.addEventListener('scroll', function() {
-        if (!mobileMenu.classList.contains('hidden')) {
-            if (scrollTimeout) clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                cerrarMenuMobile();
-            }, 100);
-        }
-    });
-    
+     
     window.addEventListener('resize', function() {
         if (window.innerWidth >= 768) {
             cerrarMenuMobile();
