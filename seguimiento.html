@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -249,42 +250,51 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <script type="module">
+    import { getCurrentUser, showRegisterModal } from './js/auth.js';
     import { cargarVentasFirestore } from './js/firebase-ventas.js';
     
     window.buscarPedido = async function() {
-        const numeroPedido = document.getElementById('numeroPedido').value.trim();
-        const errorDiv = document.getElementById('errorMessage');
+    const numeroPedido = document.getElementById('numeroPedido').value.trim();
+    const errorDiv = document.getElementById('errorMessage');
+    
+    if (!numeroPedido) {
+        errorDiv.innerHTML = 'Por favor ingresa un número de pedido';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+    
+    errorDiv.classList.add('hidden');
+    
+    // Verificar si hay usuario autenticado
+    const user = getCurrentUser();
+    if (!user) {
+        errorDiv.innerHTML = 'Debes iniciar sesión para ver tu pedido. <a href="index.html?openRegister=true" class="underline text-[#7B7369]">Iniciar sesión</a>';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const todasVentas = await cargarVentasFirestore(); // solo sus propias ventas
+        const pedido = todasVentas.find(v => 
+            v.numeroPedido === numeroPedido || 
+            v.id === numeroPedido ||
+            `LUMA-${v.id}` === numeroPedido
+        );
         
-        if (!numeroPedido) {
-            errorDiv.innerHTML = 'Por favor ingresa un número de pedido';
+        if (!pedido) {
+            errorDiv.innerHTML = 'No encontramos un pedido con ese número. Verifica e intenta de nuevo.';
             errorDiv.classList.remove('hidden');
+            document.getElementById('resultadoPedido').classList.add('hidden');
             return;
         }
         
-        errorDiv.classList.add('hidden');
-        
-        try {
-            const todasVentas = await cargarVentasFirestore();
-            const pedido = todasVentas.find(v => 
-                v.numeroPedido === numeroPedido || 
-                v.id === numeroPedido ||
-                `LUMA-${v.id}` === numeroPedido
-            );
-            
-            if (!pedido) {
-                errorDiv.innerHTML = 'No encontramos un pedido con ese número. Verifica e intenta de nuevo.';
-                errorDiv.classList.remove('hidden');
-                document.getElementById('resultadoPedido').classList.add('hidden');
-                return;
-            }
-            
-            mostrarPedido(pedido);
-        } catch (error) {
-            console.error("Error buscando pedido:", error);
-            errorDiv.innerHTML = 'Error al buscar el pedido. Intenta de nuevo.';
-            errorDiv.classList.remove('hidden');
-        }
-    };
+        mostrarPedido(pedido);
+    } catch (error) {
+        console.error("Error buscando pedido:", error);
+        errorDiv.innerHTML = 'Error al buscar el pedido. Intenta de nuevo.';
+        errorDiv.classList.remove('hidden');
+    }
+};
     
     function mostrarPedido(pedido) {
         document.getElementById('resultadoPedido').classList.remove('hidden');
