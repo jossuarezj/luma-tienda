@@ -1,10 +1,9 @@
-// js/firebase-ventas.js
 import { db } from './firebase-config.js';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getCurrentUser } from './auth.js';
 
 const VENTAS_COLLECTION = "ventas";
 
-// Guardar una venta en Firestore
 export async function guardarVentaFirestore(venta) {
     try {
         const docRef = await addDoc(collection(db, VENTAS_COLLECTION), {
@@ -20,10 +19,20 @@ export async function guardarVentaFirestore(venta) {
     }
 }
 
-// Cargar todas las ventas desde Firestore
 export async function cargarVentasFirestore() {
     try {
-        const q = query(collection(db, VENTAS_COLLECTION), orderBy("fecha", "desc"));
+        const user = getCurrentUser();
+        if (!user) return [];
+        
+        let q;
+        if (user.email === "info@lumacolombia.com") {
+            // Administrador: ver todas las ventas
+            q = query(collection(db, VENTAS_COLLECTION), orderBy("fecha", "desc"));
+        } else {
+            // Usuario normal: solo sus propias ventas
+            q = query(collection(db, VENTAS_COLLECTION), where("email", "==", user.email), orderBy("fecha", "desc"));
+        }
+        
         const querySnapshot = await getDocs(q);
         const ventas = [];
         querySnapshot.forEach((doc) => {
@@ -37,7 +46,6 @@ export async function cargarVentasFirestore() {
     }
 }
 
-// Actualizar estado de una venta
 export async function actualizarVentaFirestore(id, datos) {
     try {
         await updateDoc(doc(db, VENTAS_COLLECTION, id), datos);
@@ -49,7 +57,6 @@ export async function actualizarVentaFirestore(id, datos) {
     }
 }
 
-// Eliminar una venta
 export async function eliminarVentaFirestore(id) {
     try {
         await deleteDoc(doc(db, VENTAS_COLLECTION, id));
