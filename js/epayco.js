@@ -2,7 +2,7 @@ import { enviarCorreoConfirmacion } from './email.js';
 import { getCurrentUser } from './auth.js';
 
 const EPaycoKey = "51fb6f62a2481396912cdc2951be0d78";
-const ESandbox = true;
+const ESandbox = false;
 
 function showNotification(message) {
     const notification = document.createElement('div');
