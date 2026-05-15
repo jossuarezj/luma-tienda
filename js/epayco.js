@@ -2,7 +2,7 @@ import { enviarCorreoConfirmacion } from './email.js';
 import { getCurrentUser } from './auth.js';
 
 const EPaycoKey = "51fb6f62a2481396912cdc2951be0d78";
-const ESandbox = false; 
+const ESandbox = true; 
 
 function showNotification(message) {
     const notification = document.createElement('div');
@@ -94,7 +94,7 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         const handler = ePayco.checkout.configure({
             key: EPaycoKey,
             test: ESandbox,
-            external: false
+            external: true
         });
         
         const datosPago = {
@@ -122,7 +122,7 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         console.log("Datos de pago:", datosPago);
         handler.open(datosPago);
         
-    window.epaycoCallback = async function(response) {
+window.epaycoCallback = async function(response) {
     console.log("Respuesta ePayco:", response);
     if (response && response.status === "Aceptada") {
         // 1. Guardar en localStorage (backup)
@@ -219,3 +219,8 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         showNotification("❌ El pago no se completó. Intenta nuevamente.");
     }
 };
+    } catch (error) {
+        console.error("❌ Error al abrir ePayco:", error);
+        showNotification("Error al procesar el pago. Intenta nuevamente.");
+    }
+}
