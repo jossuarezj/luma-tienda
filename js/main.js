@@ -1629,17 +1629,11 @@ function cerrarMenuMobile() {
 window.cerrarMenuMobile = cerrarMenuMobile;
 
 if (menuBtn && mobileMenu) {
-    // Función para abrir/cerrar el menú (tanto para click como para touch)
-    const toggleMenu = (e) => {
+    menuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         mobileMenu.classList.toggle('hidden');
-    };
+    });
     
-    // Evento para ratón y para pantallas táctiles
-    menuBtn.addEventListener('click', toggleMenu);
-    menuBtn.addEventListener('touchstart', toggleMenu);
-    
-    // Cerrar si se hace clic fuera del menú
     document.addEventListener('click', function(event) {
         if (!mobileMenu.classList.contains('hidden')) {
             if (!menuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
@@ -1648,18 +1642,16 @@ if (menuBtn && mobileMenu) {
         }
     });
     
-    // Opcional: cerrar después de hacer scroll (aumentamos el tiempo para que no cierre inmediatamente)
     let scrollTimeout;
     window.addEventListener('scroll', function() {
         if (!mobileMenu.classList.contains('hidden')) {
             if (scrollTimeout) clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(() => {
                 cerrarMenuMobile();
-            }, 300); // antes era 100, ahora 300 para que sea más lento y dé tiempo
+            }, 100);
         }
     });
     
-    // Si la pantalla se hace grande (tablet/PC), cerramos el menú automáticamente
     window.addEventListener('resize', function() {
         if (window.innerWidth >= 768) {
             cerrarMenuMobile();
