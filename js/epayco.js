@@ -94,7 +94,7 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         const handler = ePayco.checkout.configure({
             key: EPaycoKey,
             test: ESandbox,
-            external: true
+            external: false
         });
         
         const datosPago = {
