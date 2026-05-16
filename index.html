@@ -1081,6 +1081,29 @@
         <!-- Scripts principales (SIEMPRE AL FINAL) -->
         <script type="module" src="js/main.js"></script>
         <script>
+    // Detectar retorno de ePayco
+    (async function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentSuccess = urlParams.get('payment') === 'success';
+        const refPayco = urlParams.get('ref_payco');
+        
+        if (paymentSuccess && refPayco && !localStorage.getItem('epayco_payment_processed')) {
+            localStorage.setItem('epayco_payment_processed', 'true');
+            console.log("Procesando pago exitoso de ePayco, ref_payco:", refPayco);
+            
+            // Esperar a que los scripts estén listos
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Llamar a una función que procese el pago (crearemos en global)
+            if (typeof window.procesarPagoExitosoEpayco === 'function') {
+                await window.procesarPagoExitosoEpayco(refPayco);
+            } else {
+                console.error("procesarPagoExitosoEpayco no está definida");
+            }
+        }
+    })();
+</script>
+        <script>
     // Detectar si se llega desde seguimiento.html con parámetro openRegister
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('openRegister') === 'true') {

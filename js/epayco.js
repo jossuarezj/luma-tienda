@@ -1,8 +1,8 @@
 import { enviarCorreoConfirmacion } from './email.js';
 import { getCurrentUser } from './auth.js';
 
-const EPaycoKey = "51fb6f62a2481396912cdc2951be0d78"; // ← cámbiala por tu clave de producción cuando pases a real
-const ESandbox = true; // ← cámbialo a false cuando pases a producción
+const EPaycoKey = "51fb6f62a2481396912cdc2951be0d78"; // Cámbiala por producción cuando corresponda
+const ESandbox = true; // Cambia a false en producción
 
 function showNotification(message) {
     const notification = document.createElement('div');
@@ -11,6 +11,100 @@ function showNotification(message) {
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 3000);
 }
+
+// Función global para procesar el pago exitoso al regresar de ePayco
+window.procesarPagoExitosoEpayco = async function(refPayco) {
+    console.log("📦 Procesando pago exitoso con ref_payco:", refPayco);
+    // Recuperar datos guardados antes del pago
+    const pendingJSON = localStorage.getItem('epayco_pending_transaction');
+    if (!pendingJSON) {
+        console.error("No hay transacción pendiente");
+        return;
+    }
+    const pending = JSON.parse(pendingJSON);
+    const { user, itemsVisibles, subtotal, descuento, costoEnvio, totalConEnvio, cuponAplicado, usedCoupon } = pending;
+    
+    if (!user) {
+        console.error("Usuario no disponible");
+        return;
+    }
+    
+    // Generar número de pedido único
+    const numeroPedido = 'LUMA-' + Date.now();
+    
+    // 1. Guardar en Firestore
+    try {
+        const { guardarVentaFirestore } = await import('./firebase-ventas.js');
+        const ventaData = {
+            usuario: user.name,
+            email: user.email,
+            uid: user.uid,
+            productos: itemsVisibles,
+            subtotal: subtotal,
+            descuento: descuento,
+            cuponAplicado: cuponAplicado,
+            envio: costoEnvio,
+            total: totalConEnvio,
+            metodoPago: "epayco",
+            estado: "Pagado",
+            estadoEnvio: "confirmado",
+            numeroPedido: numeroPedido,
+            fecha: new Date().toISOString(),
+            refPayco: refPayco
+        };
+        const ventaId = await guardarVentaFirestore(ventaData);
+        console.log("✅ Venta guardada en Firestore con ID:", ventaId);
+    } catch (error) {
+        console.error("❌ Error guardando en Firestore:", error);
+        showNotification("Error al guardar la compra. Contacta a soporte.", "error");
+        return;
+    }
+    
+    // 2. Enviar correo de confirmación
+    try {
+        const productosCorreo = itemsVisibles.map(item => ({
+            nombre: item.nombre,
+            talla: item.talla || 'Única',
+            cantidad: item.cantidad,
+            precio: item.precio
+        }));
+        const datosCorreo = {
+            nombre: user.name || 'Cliente',
+            email: user.email || 'cliente@email.com',
+            numeroPedido: numeroPedido,
+            subtotal: subtotal,
+            descuento: descuento,
+            costoEnvio: costoEnvio,
+            envioGratis: costoEnvio === 0,
+            total: totalConEnvio,
+            metodoPago: 'epayco',
+            direccion: 'Pago en línea',
+            ciudad: 'No aplica',
+            productos: productosCorreo
+        };
+        await enviarCorreoConfirmacion(datosCorreo);
+        console.log("✅ Correo enviado");
+    } catch (error) {
+        console.error("❌ Error enviando correo:", error);
+    }
+    
+    // 3. Limpiar carrito, cupones y datos pendientes
+    localStorage.removeItem('lumaCart');
+    localStorage.removeItem('cuponAplicado');
+    localStorage.removeItem('luma_current_coupon');
+    localStorage.removeItem('epayco_pending_transaction');
+    if (user.email && !usedCoupon) {
+        localStorage.setItem(`luma_descuento_usado_${user.email}`, 'true');
+    }
+    
+    // 4. Eliminar parámetros de la URL para no reprocesar
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    showNotification(`✨ ¡Pago exitoso! Gracias por tu compra ${user.name} ✨`);
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
+};
 
 export async function procesarPagoConEpayco(cart, usedCoupon) {
     console.log("🔍 Iniciando pago con ePayco...");
@@ -35,7 +129,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
     const cuponGuardado = localStorage.getItem('luma_current_coupon');
     if (cuponGuardado) {
         cuponInfo = JSON.parse(cuponGuardado);
-        console.log("✅ Cupón recuperado:", cuponInfo);
     } else if (cuponAplicado) {
         try {
             const { cargarCuponesFirestore } = await import('./firebase-cupones.js');
@@ -57,8 +150,24 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
     
     const UMBRAL_ENVIO_GRATIS = 99990;
     const costoEnvio = subtotal >= UMBRAL_ENVIO_GRATIS ? 0 : 17500;
-    const totalConDescuento = subtotal - descuento;
-    const totalConEnvio = totalConDescuento + costoEnvio;
+    const totalConEnvio = subtotal - descuento + costoEnvio;
+    
+    // Guardar datos de la transacción pendiente en localStorage
+    const pendingTransaction = {
+        user: {
+            name: user.name,
+            email: user.email,
+            uid: user.uid
+        },
+        itemsVisibles: itemsVisibles,
+        subtotal: subtotal,
+        descuento: descuento,
+        costoEnvio: costoEnvio,
+        totalConEnvio: totalConEnvio,
+        cuponAplicado: cuponAplicado,
+        usedCoupon: usedCoupon
+    };
+    localStorage.setItem('epayco_pending_transaction', JSON.stringify(pendingTransaction));
     
     const descripcionProductos = itemsVisibles.map(item => 
         `${item.nombre} ${item.colorNombre || ''} ${item.talla ? `Talla ${item.talla}` : ''} x${item.cantidad}`
@@ -92,8 +201,8 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
             email_billing: user.email || "cliente@luma.co",
             phone_billing: "",
             address_billing: "",
-            response: window.location.href + "?payment=success",
-            confirmation: window.location.href + "?payment=confirm",
+            response: window.location.href.split('?')[0] + "?payment=success",
+            confirmation: window.location.href.split('?')[0] + "?payment=confirm",
             methods: ["TC", "PSE", "NEQUI", "CASH"],
             autoclick: false,
             style: { theme: "dark", background: "#4d4845", color: "#FFFFFF" }
@@ -101,87 +210,6 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         
         console.log("Datos de pago:", datosPago);
         handler.open(datosPago);
-        
-        // Definir el callback global que ePayco llamará
-        window.epaycoCallback = async function(response) {
-            console.log("📞 Respuesta ePayco recibida:", response);
-            if (response && response.status === "Aceptada") {
-                console.log("✅ Pago aceptado. Guardando venta...");
-                
-                // Generar número de pedido
-                const numeroPedido = 'LUMA-' + Date.now();
-                
-                // 1. Guardar en Firestore
-                try {
-                    const { guardarVentaFirestore } = await import('./firebase-ventas.js');
-                    const ventaData = {
-                        usuario: user.name,
-                        email: user.email,
-                        uid: user.uid,
-                        productos: itemsVisibles,
-                        subtotal: subtotal,
-                        descuento: descuento,
-                        cuponAplicado: cuponAplicado,
-                        envio: costoEnvio,
-                        total: totalConEnvio,
-                        metodoPago: "epayco",
-                        estado: "Pagado",
-                        estadoEnvio: "confirmado",
-                        numeroPedido: numeroPedido,
-                        fecha: new Date().toISOString()
-                    };
-                    const ventaId = await guardarVentaFirestore(ventaData);
-                    console.log("✅ Venta guardada en Firestore con ID:", ventaId);
-                } catch (error) {
-                    console.error("❌ Error guardando en Firestore:", error);
-                }
-                
-                // 2. Enviar correo de confirmación
-                try {
-                    const productosCorreo = itemsVisibles.map(item => ({
-                        nombre: item.nombre,
-                        talla: item.talla || 'Única',
-                        cantidad: item.cantidad,
-                        precio: item.precio
-                    }));
-                    const datosCorreo = {
-                        nombre: user.name || 'Cliente',
-                        email: user.email || 'cliente@email.com',
-                        numeroPedido: numeroPedido,
-                        subtotal: subtotal,
-                        descuento: descuento,
-                        costoEnvio: costoEnvio,
-                        envioGratis: costoEnvio === 0,
-                        total: totalConEnvio,
-                        metodoPago: 'epayco',
-                        direccion: 'Pago en línea',
-                        ciudad: 'No aplica',
-                        productos: productosCorreo
-                    };
-                    await enviarCorreoConfirmacion(datosCorreo);
-                    console.log("✅ Correo enviado");
-                } catch (error) {
-                    console.error("❌ Error enviando correo:", error);
-                }
-                
-                // 3. Limpiar carrito y cupones
-                localStorage.removeItem('lumaCart');
-                localStorage.removeItem('cuponAplicado');
-                localStorage.removeItem('luma_current_coupon');
-                if (user.email && !usedCoupon) {
-                    localStorage.setItem(`luma_descuento_usado_${user.email}`, 'true');
-                }
-                
-                showNotification(`✨ ¡Pago exitoso! Gracias por tu compra ${user.name} ✨`);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                console.warn("⚠️ Pago no aceptado o respuesta inesperada:", response);
-                showNotification("❌ El pago no se completó. Intenta nuevamente.");
-            }
-        };
-        
     } catch (error) {
         console.error("❌ Error al abrir ePayco:", error);
         showNotification("Error al procesar el pago. Intenta nuevamente.");
