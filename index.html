@@ -1081,6 +1081,30 @@
         <!-- Scripts principales (SIEMPRE AL FINAL) -->
         <script type="module" src="js/main.js"></script>
         <script>
+    (async function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentSuccess = urlParams.get('payment') === 'success';
+        const refPayco = urlParams.get('ref_payco');
+        
+        if (paymentSuccess && refPayco && !localStorage.getItem('epayco_processed_' + refPayco)) {
+            // Marcar como procesado para no repetir
+            localStorage.setItem('epayco_processed_' + refPayco, 'true');
+            console.log("🎉 Procesando pago exitoso de ePayco, ref_payco:", refPayco);
+            
+            // Esperar a que los scripts y el usuario estén listos (importante)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            if (typeof window.procesarPagoExitosoEpayco === 'function') {
+                await window.procesarPagoExitosoEpayco(refPayco);
+                // Limpiar la URL para que no se procese de nuevo al recargar
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                console.error("❌ window.procesarPagoExitosoEpayco no está definida");
+            }
+        }
+    })();
+</script>
+        <script>
     // Detectar retorno de ePayco
     (async function() {
         const urlParams = new URLSearchParams(window.location.search);
