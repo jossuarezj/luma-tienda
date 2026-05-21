@@ -78,8 +78,8 @@ window.procesarPagoExitosoEpayco = async function(refPayco) {
             envioGratis: costoEnvio === 0,
             total: totalConEnvio,
             metodoPago: 'epayco',
-            direccion: 'Pago en línea',
-            ciudad: 'No aplica',
+            direccion: pending.datosEnvio.direccion || 'Pago en línea',   // ← usar dirección real
+            ciudad: pending.datosEnvio.ciudad || 'No aplica',             // ← usar ciudad real
             productos: productosCorreo
         };
         await enviarCorreoConfirmacion(datosCorreo);
@@ -108,21 +108,68 @@ window.procesarPagoExitosoEpayco = async function(refPayco) {
 
 export async function procesarPagoConEpayco(cart, usedCoupon) {
     console.log("🔍 Iniciando pago con ePayco...");
-    
+
     const user = getCurrentUser();
-    if (!user) { 
-        import('./auth.js').then(module => module.showRegisterModal()); 
-        return; 
+    if (!user) {
+        import('./auth.js').then(module => module.showRegisterModal());
+        return;
     }
-    
+
     const itemsVisibles = cart.filter(item => !item.esParteDePack);
-    if (itemsVisibles.length === 0) { 
-        showNotification('🛒 Tu carrito está vacío'); 
-        return; 
+    if (itemsVisibles.length === 0) {
+        showNotification('🛒 Tu carrito está vacío');
+        return;
     }
-    
-    const subtotal = itemsVisibles.reduce((s, i) => s + (i.precio * i.cantidad), 0);
-    
+
+    // ===== NUEVO: Mostrar modal de envío antes de continuar =====
+    // Esperamos a que el usuario complete la dirección
+    const datosEnvio = await new Promise((resolve) => {
+        // Guardamos temporalmente los datos del pago en una variable global
+        window._epaycoPendingData = { cart, usedCoupon, itemsVisibles, user };
+        // Abrir modal de envío (reutilizamos el mismo que contraentrega)
+        const modal = document.getElementById('modalEnvio');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        // Escuchamos el envío del formulario una sola vez
+        const form = document.getElementById('formEnvio');
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            // Validar campos (similar a contraentrega)
+            const nombre = document.getElementById('envioNombre').value.trim();
+            const apellido = document.getElementById('envioApellido').value.trim();
+            const cedula = document.getElementById('envioCedula').value.trim();
+            const telefono = document.getElementById('envioTelefono').value.trim();
+            const ciudad = document.getElementById('envioCiudad').value.trim();
+            const direccion = document.getElementById('envioDireccion').value.trim();
+            const tipoVivienda = document.getElementById('envioTipoVivienda').value;
+            const infoAdicional = document.getElementById('envioInfoAdicional').value.trim();
+            if (!nombre || !apellido || !cedula || !telefono || !ciudad || !direccion) {
+                mostrarError("Completa todos los campos obligatorios");
+                return;
+            }
+            const datos = { nombre, apellido, cedula, telefono, ciudad, direccion, tipoVivienda, infoAdicional };
+            // Cerrar modal
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            form.removeEventListener('submit', handleSubmit);
+            resolve(datos);
+        };
+        form.addEventListener('submit', handleSubmit);
+    });
+
+    // Ahora continuamos con el pago, usando los datos de envío obtenidos
+    const { itemsVisibles: items, user: currentUser, cart: cartData, usedCoupon: used } = window._epaycoPendingData;
+    delete window._epaycoPendingData;
+
+    // Guardar los datos de envío en localStorage para usarlos al procesar el retorno
+    localStorage.setItem('lumaDatosEnvio', JSON.stringify(datosEnvio));
+
+    // ... resto del código original (cálculo de descuento, envío, etc.)
+    // Pero necesitamos usar los mismos cálculos que tenías antes
+    const subtotal = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+    // Calcular descuento (código original)
     let descuento = 0;
     let cuponAplicado = localStorage.getItem('cuponAplicado');
     let cuponInfo = null;
@@ -136,56 +183,51 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
             cuponInfo = cuponesFS.find(c => c.codigo === cuponAplicado && c.activo === true);
         } catch(e) { console.log("Error cargando cupón", e); }
     }
-    
-    if (cuponInfo && (!cuponInfo.usosPorUsuario || !cuponInfo.usosPorUsuario.includes(user.email))) {
+    if (cuponInfo && (!cuponInfo.usosPorUsuario || !cuponInfo.usosPorUsuario.includes(currentUser.email))) {
         const { calcularSubtotalElegible } = await import('./cart.js');
-        const subtotalElegible = calcularSubtotalElegible(itemsVisibles, cuponInfo);
+        const subtotalElegible = calcularSubtotalElegible(items, cuponInfo);
         if (cuponInfo.tipo === "porcentaje") {
             descuento = subtotalElegible * (cuponInfo.valor / 100);
         } else {
             descuento = Math.min(cuponInfo.valor, subtotalElegible);
         }
-        console.log(`💰 Descuento: ${descuento}`);
     }
-    
+
     const UMBRAL_ENVIO_GRATIS = 99990;
     const costoEnvio = subtotal >= UMBRAL_ENVIO_GRATIS ? 0 : 17500;
     const totalConEnvio = subtotal - descuento + costoEnvio;
-    
-    // Guardar datos de la transacción pendiente en localStorage
+
+    // Guardar datos pendientes para el retorno (incluyendo dirección)
     const pendingTransaction = {
-        user: {
-            name: user.name,
-            email: user.email,
-            uid: user.uid
-        },
-        itemsVisibles: itemsVisibles,
+        user: { name: currentUser.name, email: currentUser.email, uid: currentUser.uid },
+        itemsVisibles: items,
         subtotal: subtotal,
         descuento: descuento,
         costoEnvio: costoEnvio,
         totalConEnvio: totalConEnvio,
         cuponAplicado: cuponAplicado,
-        usedCoupon: usedCoupon
+        usedCoupon: used,
+        datosEnvio: datosEnvio  // ← guardamos la dirección
     };
     localStorage.setItem('epayco_pending_transaction', JSON.stringify(pendingTransaction));
-    
-    const descripcionProductos = itemsVisibles.map(item => 
+
+    const descripcionProductos = items.map(item =>
         `${item.nombre} ${item.colorNombre || ''} ${item.talla ? `Talla ${item.talla}` : ''} x${item.cantidad}`
     ).join(', ');
-    
+
     if (typeof ePayco === 'undefined') {
         console.error("❌ ePayco no está cargado");
         showNotification("Error: ePayco no está listo. Recarga la página.");
         return;
     }
-    
+
     try {
         const handler = ePayco.checkout.configure({
             key: EPaycoKey,
             test: ESandbox,
             external: false
         });
-        
+
         const datosPago = {
             name: "LUMA Colombia",
             description: descripcionProductos.substring(0, 150) + (costoEnvio > 0 ? ` + Envío $${costoEnvio.toLocaleString()}` : " + Envío GRATIS"),
@@ -196,9 +238,9 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
             tax: "0",
             country: "CO",
             lang: "es",
-            name_billing: user.name || "Cliente",
+            name_billing: currentUser.name || "Cliente",
             surname_billing: "",
-            email_billing: user.email || "cliente@luma.co",
+            email_billing: currentUser.email || "cliente@luma.co",
             phone_billing: "",
             address_billing: "",
             response: window.location.href.split('?')[0] + "?payment=success",
@@ -207,8 +249,7 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
             autoclick: false,
             style: { theme: "dark", background: "#4d4845", color: "#FFFFFF" }
         };
-        
-        console.log("Datos de pago:", datosPago);
+
         handler.open(datosPago);
     } catch (error) {
         console.error("❌ Error al abrir ePayco:", error);
