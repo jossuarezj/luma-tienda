@@ -121,43 +121,97 @@ export async function procesarPagoConEpayco(cart, usedCoupon) {
         return;
     }
 
-    // ===== NUEVO: Mostrar modal de envío antes de continuar =====
-    // Esperamos a que el usuario complete la dirección
-    const datosEnvio = await new Promise((resolve) => {
-        // Guardamos temporalmente los datos del pago en una variable global
-        window._epaycoPendingData = { cart, usedCoupon, itemsVisibles, user };
-        // Abrir modal de envío (reutilizamos el mismo que contraentrega)
-        const modal = document.getElementById('modalEnvio');
-        if (modal) {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+// ===== NUEVO: Mostrar modal de envío antes de continuar =====
+const datosEnvio = await new Promise(async (resolve) => {
+    window._epaycoPendingData = { cart, usedCoupon, itemsVisibles, user };
+    const modal = document.getElementById('modalEnvio');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Calcular subtotal, descuento, envío y total (igual que en abrirModalEnvio)
+        const items = window._epaycoPendingData.itemsVisibles;
+        const subtotal = items.reduce((s, i) => s + (i.precio * i.cantidad), 0);
+        
+        // Calcular descuento (reutilizando lógica similar)
+        let descuento = 0;
+        let cuponAplicado = localStorage.getItem('cuponAplicado');
+        let cuponInfo = null;
+        const cuponGuardado = localStorage.getItem('luma_current_coupon');
+        if (cuponGuardado) {
+            cuponInfo = JSON.parse(cuponGuardado);
+        } else if (cuponAplicado) {
+            try {
+                const { cargarCuponesFirestore } = await import('./firebase-cupones.js');
+                const cuponesFS = await cargarCuponesFirestore();
+                cuponInfo = cuponesFS.find(c => c.codigo === cuponAplicado && c.activo === true);
+            } catch(e) { console.log("Error cargando cupón", e); }
         }
-        // Escuchamos el envío del formulario una sola vez
-        const form = document.getElementById('formEnvio');
-        const handleSubmit = async (e) => {
-            e.preventDefault();
-            // Validar campos (similar a contraentrega)
-            const nombre = document.getElementById('envioNombre').value.trim();
-            const apellido = document.getElementById('envioApellido').value.trim();
-            const cedula = document.getElementById('envioCedula').value.trim();
-            const telefono = document.getElementById('envioTelefono').value.trim();
-            const ciudad = document.getElementById('envioCiudad').value.trim();
-            const direccion = document.getElementById('envioDireccion').value.trim();
-            const tipoVivienda = document.getElementById('envioTipoVivienda').value;
-            const infoAdicional = document.getElementById('envioInfoAdicional').value.trim();
-            if (!nombre || !apellido || !cedula || !telefono || !ciudad || !direccion) {
-                mostrarError("Completa todos los campos obligatorios");
-                return;
+        if (cuponInfo && (!cuponInfo.usosPorUsuario || !cuponInfo.usosPorUsuario.includes(window._epaycoPendingData.user.email))) {
+            const { calcularSubtotalElegible } = await import('./cart.js');
+            const subtotalElegible = calcularSubtotalElegible(items, cuponInfo);
+            if (cuponInfo.tipo === "porcentaje") {
+                descuento = subtotalElegible * (cuponInfo.valor / 100);
+            } else {
+                descuento = Math.min(cuponInfo.valor, subtotalElegible);
             }
-            const datos = { nombre, apellido, cedula, telefono, ciudad, direccion, tipoVivienda, infoAdicional };
-            // Cerrar modal
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            form.removeEventListener('submit', handleSubmit);
-            resolve(datos);
-        };
-        form.addEventListener('submit', handleSubmit);
-    });
+        }
+        
+        const envioGratis = subtotal >= 99990;
+        const costoEnvio = envioGratis ? 0 : 17500;
+        const total = subtotal - descuento + costoEnvio;
+        
+        // Actualizar elementos del resumen en el modal
+        document.getElementById('resumenSubtotal').innerText = `$${subtotal.toLocaleString()}`;
+        document.getElementById('resumenEnvio').innerText = envioGratis ? 'GRATIS' : `$${costoEnvio.toLocaleString()}`;
+        document.getElementById('resumenTotal').innerText = `$${total.toLocaleString()}`;
+        
+        const descuentoRow = document.getElementById('resumenDescuentoRow');
+        const descuentoElem = document.getElementById('resumenDescuento');
+        if (descuento > 0) {
+            if (descuentoElem) descuentoElem.innerText = `-$${descuento.toLocaleString()}`;
+            if (descuentoRow) descuentoRow.classList.remove('hidden');
+        } else {
+            if (descuentoRow) descuentoRow.classList.add('hidden');
+        }
+        
+        // Precargar datos de envío si existen
+        const datosGuardados = localStorage.getItem('lumaDatosEnvio');
+        if (datosGuardados) {
+            const envio = JSON.parse(datosGuardados);
+            document.getElementById('envioNombre').value = envio.nombre || '';
+            document.getElementById('envioApellido').value = envio.apellido || '';
+            document.getElementById('envioCedula').value = envio.cedula || '';
+            document.getElementById('envioTelefono').value = envio.telefono || '';
+            document.getElementById('envioCiudad').value = envio.ciudad || '';
+            document.getElementById('envioDireccion').value = envio.direccion || '';
+            document.getElementById('envioTipoVivienda').value = envio.tipoVivienda || 'casa';
+            document.getElementById('envioInfoAdicional').value = envio.infoAdicional || '';
+        }
+    }
+    const form = document.getElementById('formEnvio');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('envioNombre').value.trim();
+        const apellido = document.getElementById('envioApellido').value.trim();
+        const cedula = document.getElementById('envioCedula').value.trim();
+        const telefono = document.getElementById('envioTelefono').value.trim();
+        const ciudad = document.getElementById('envioCiudad').value.trim();
+        const direccion = document.getElementById('envioDireccion').value.trim();
+        const tipoVivienda = document.getElementById('envioTipoVivienda').value;
+        const infoAdicional = document.getElementById('envioInfoAdicional').value.trim();
+        if (!nombre || !apellido || !cedula || !telefono || !ciudad || !direccion) {
+            alert("Completa todos los campos obligatorios");
+            return;
+        }
+        const datos = { nombre, apellido, cedula, telefono, ciudad, direccion, tipoVivienda, infoAdicional };
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        form.removeEventListener('submit', handleSubmit);
+        resolve(datos);
+    };
+    form.addEventListener('submit', handleSubmit);
+});
 
     // Ahora continuamos con el pago, usando los datos de envío obtenidos
     const { itemsVisibles: items, user: currentUser, cart: cartData, usedCoupon: used } = window._epaycoPendingData;
