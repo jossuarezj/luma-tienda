@@ -59,7 +59,16 @@ window.procesarPagoExitosoEpayco = async function(refPayco) {
         showNotification("Error al guardar la compra. Contacta a soporte.", "error");
         return;
     }
-    
+    // 1.5 Marcar cupón como usado
+    if (pending.cuponAplicado) {
+            try {
+                const { marcarCuponUsado } = await import('./firebase-cupones.js');
+                await marcarCuponUsado(pending.cuponAplicado, user.email);
+                console.log(`✅ Cupón ${pending.cuponAplicado} marcado como usado`);
+            } catch (error) {
+                console.error("❌ Error marcando cupón:", error);
+            }
+        }  
     // 2. Enviar correo de confirmación
     try {
         const productosCorreo = itemsVisibles.map(item => ({
@@ -87,6 +96,7 @@ window.procesarPagoExitosoEpayco = async function(refPayco) {
     } catch (error) {
         console.error("❌ Error enviando correo:", error);
     }
+     
     
     // 3. Limpiar carrito, cupones y datos pendientes
     localStorage.removeItem('lumaCart');
