@@ -58,6 +58,7 @@
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold">Panel de Administración</h1>
         <button onclick="logoutAdmin()" class="logout-btn"><i class="fas fa-sign-out-alt mr-2"></i>Cerrar sesión</button>
+        <button onclick="abrirModalOferta()" class="btn-cocoa ml-2"><i class="fas fa-file-pdf mr-2"></i>Crear oferta</button>
         <button onclick="abrirModalFactura()" class="btn-cocoa ml-4"><i class="fas fa-file-invoice mr-2"></i>Crear factura</button>
     </div>
     
@@ -889,6 +890,426 @@ window.generarFacturaPDF = function() {
 
 document.getElementById('btnAgregarProductoFactura').addEventListener('click', window.agregarProductoFactura);
 document.getElementById('agregarColorBtn').addEventListener('click', window.agregarNuevoColor);
+
+// ==================== OFERTA COMERCIAL ====================
+let productosOfertaTemp = [];
+let imagenesOfertaSeleccionadas = [];
+let contadorOferta = 0;
+
+// Obtener último número de oferta desde Firestore (o localStorage)
+async function obtenerNumeroOferta() {
+    try {
+        // Si existe un contador en Firestore (colección config)
+        // const doc = await getDoc(doc(db, 'config', 'ofertaCounter'));
+        // return doc.exists() ? doc.data().numero + 1 : 1;
+        // Por ahora usamos localStorage y timestamp
+        let ultimo = parseInt(localStorage.getItem('luma_ultimo_numero_oferta')) || 0;
+        ultimo++;
+        localStorage.setItem('luma_ultimo_numero_oferta', ultimo);
+        return `OF-${String(ultimo).padStart(3, '0')}`;
+    } catch (e) {
+        return `OF-${Date.now()}`;
+    }
+}
+
+window.abrirModalOferta = async function() {
+    document.getElementById('modalOferta').classList.remove('hidden');
+    document.getElementById('modalOferta').classList.add('flex');
+    
+    // Generar número de oferta
+    const numero = await obtenerNumeroOferta();
+    document.getElementById('ofertaNumero').value = numero;
+    
+    // Fecha actual
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    document.getElementById('ofertaFecha').value = hoyStr;
+    
+    // Vigencia (15 días después)
+    const vigencia = new Date(hoy);
+    vigencia.setDate(vigencia.getDate() + 15);
+    document.getElementById('ofertaVigencia').value = vigencia.toISOString().split('T')[0];
+    
+    // Limpiar listas
+    productosOfertaTemp = [];
+    imagenesOfertaSeleccionadas = [];
+    actualizarListaProductosOferta();
+    actualizarImagenesOferta();
+};
+
+window.cerrarModalOferta = function() {
+    document.getElementById('modalOferta').classList.add('hidden');
+    document.getElementById('modalOferta').classList.remove('flex');
+};
+
+// ==================== PRODUCTOS OFERTA ====================
+
+// Función para agregar producto (similar a factura)
+window.agregarProductoOferta = function() {
+    // Mostrar un modal simple para seleccionar referencia, color, talla, cantidad y precio
+    const referencia = prompt('Referencia (ej: ALMA):');
+    if (!referencia) return;
+    const color = prompt('Color (MARFIL, NEGRO, COCOA, BEIGE):');
+    if (!color) return;
+    const talla = prompt('Talla (S/M, L/XL):') || 'S/M';
+    const cantidad = parseInt(prompt('Cantidad:', '1')) || 1;
+    const precio = parseFloat(prompt('Precio unitario (COP):', '49990')) || 49990;
+    
+    // Buscar el producto en Firestore para obtener imágenes
+    const producto = window.productos ? window.productos.find(p => 
+        p.NOMBRE === referencia && p.COLORNOMBRE === color
+    ) : null;
+    
+    const imagenesDisponibles = producto && producto.IMAGENES ? producto.IMAGENES : [];
+    
+    productosOfertaTemp.push({
+        referencia,
+        color,
+        talla,
+        cantidad,
+        precio,
+        imagenes: imagenesDisponibles
+    });
+    
+    actualizarListaProductosOferta();
+    // Si hay imágenes, mostrarlas para seleccionar
+    if (imagenesDisponibles.length > 0) {
+        // Seleccionar automáticamente la primera imagen
+        imagenesOfertaSeleccionadas.push(imagenesDisponibles[0]);
+        actualizarImagenesOferta();
+    }
+};
+
+function actualizarListaProductosOferta() {
+    const contenedor = document.getElementById('listaProductosOferta');
+    if (!contenedor) return;
+    
+    if (productosOfertaTemp.length === 0) {
+        contenedor.innerHTML = '<p class="text-gray-400 text-sm">No hay productos agregados</p>';
+        calcularTotalesOferta();
+        return;
+    }
+    
+    let html = '';
+    let subtotal = 0;
+    productosOfertaTemp.forEach((p, idx) => {
+        const sub = p.cantidad * p.precio;
+        subtotal += sub;
+        html += `
+            <div class="flex justify-between items-center bg-white p-2 rounded-lg border border-gray-200">
+                <div>
+                    <span class="font-semibold">${p.referencia}</span>
+                    <span class="text-sm text-gray-500">${p.color} - ${p.talla} x${p.cantidad}</span>
+                    <span class="text-sm font-bold ml-2">$${sub.toLocaleString()}</span>
+                </div>
+                <div>
+                    ${p.imagenes && p.imagenes.length > 0 ? `<button onclick="seleccionarImagenOferta(${idx})" class="text-blue-600 text-sm mr-2"><i class="fas fa-images"></i></button>` : ''}
+                    <button onclick="eliminarProductoOferta(${idx})" class="text-red-400"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `;
+    });
+    contenedor.innerHTML = html;
+    calcularTotalesOferta();
+}
+
+window.eliminarProductoOferta = function(index) {
+    // También eliminar las imágenes asociadas
+    const producto = productosOfertaTemp[index];
+    if (producto && producto.imagenes) {
+        producto.imagenes.forEach(img => {
+            const idx = imagenesOfertaSeleccionadas.indexOf(img);
+            if (idx > -1) imagenesOfertaSeleccionadas.splice(idx, 1);
+        });
+    }
+    productosOfertaTemp.splice(index, 1);
+    actualizarListaProductosOferta();
+    actualizarImagenesOferta();
+};
+
+function calcularTotalesOferta() {
+    let subtotal = 0;
+    productosOfertaTemp.forEach(p => subtotal += p.cantidad * p.precio);
+    document.getElementById('subtotalOferta').innerText = `$${subtotal.toLocaleString()}`;
+    const descuento = parseFloat(document.getElementById('descuentoOferta').value) || 0;
+    const total = subtotal - (subtotal * descuento / 100);
+    document.getElementById('totalOferta').innerText = `$${total.toLocaleString()}`;
+}
+
+// Escuchar cambios en el descuento
+document.getElementById('descuentoOferta')?.addEventListener('input', calcularTotalesOferta);
+
+// ==================== IMÁGENES ====================
+
+function actualizarImagenesOferta() {
+    const contenedor = document.getElementById('imagenesSeleccionadasOferta');
+    if (!contenedor) return;
+    
+    if (imagenesOfertaSeleccionadas.length === 0) {
+        contenedor.innerHTML = '<p class="text-gray-400 text-sm">Selecciona imágenes desde los productos agregados</p>';
+        return;
+    }
+    
+    let html = '';
+    imagenesOfertaSeleccionadas.forEach((url, idx) => {
+        html += `
+            <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-300">
+                <img src="${url}" class="w-full h-full object-cover cursor-pointer" onclick="quitarImagenOferta(${idx})" title="Quitar imagen">
+            </div>
+        `;
+    });
+    contenedor.innerHTML = html;
+}
+
+window.seleccionarImagenOferta = function(productoIdx) {
+    const producto = productosOfertaTemp[productoIdx];
+    if (!producto || !producto.imagenes || producto.imagenes.length === 0) return;
+    
+    // Mostrar un selector simple con las imágenes del producto
+    const imagenes = producto.imagenes;
+    const seleccionadas = imagenesOfertaSeleccionadas;
+    
+    // Crear un modal pequeño para seleccionar
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[99999] flex items-center justify-center bg-black/50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl p-4 max-w-sm w-full">
+            <h4 class="font-bold mb-2">Selecciona imagen</h4>
+            <div class="flex flex-wrap gap-2">
+                ${imagenes.map((url, i) => `
+                    <div class="w-16 h-16 rounded-lg overflow-hidden border-2 ${seleccionadas.includes(url) ? 'border-[#4D4845]' : 'border-transparent'} cursor-pointer" onclick="toggleImagenOferta('${url}', this)">
+                        <img src="${url}" class="w-full h-full object-cover">
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" class="mt-3 bg-gray-200 px-4 py-1 rounded-full text-sm">Cerrar</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+window.toggleImagenOferta = function(url, el) {
+    const idx = imagenesOfertaSeleccionadas.indexOf(url);
+    if (idx > -1) {
+        imagenesOfertaSeleccionadas.splice(idx, 1);
+        el.classList.remove('border-[#4D4845]');
+        el.classList.add('border-transparent');
+    } else {
+        imagenesOfertaSeleccionadas.push(url);
+        el.classList.add('border-[#4D4845]');
+        el.classList.remove('border-transparent');
+    }
+    actualizarImagenesOferta();
+};
+
+window.quitarImagenOferta = function(index) {
+    imagenesOfertaSeleccionadas.splice(index, 1);
+    actualizarImagenesOferta();
+};
+
+// ==================== PDF ====================
+
+window.generarOfertaPDF = async function() {
+    // Validar campos obligatorios
+    const clienteNombre = document.getElementById('clienteNombreOferta').value.trim();
+    if (!clienteNombre) {
+        alert('Ingresa al menos el nombre del cliente');
+        return;
+    }
+    if (productosOfertaTemp.length === 0) {
+        alert('Agrega al menos un producto');
+        return;
+    }
+    
+    // Construir HTML para el PDF
+    const numeroOferta = document.getElementById('ofertaNumero').value;
+    const fecha = document.getElementById('ofertaFecha').value;
+    const vigencia = document.getElementById('ofertaVigencia').value;
+    const clienteEmpresa = document.getElementById('clienteEmpresaOferta').value || '';
+    const clienteNit = document.getElementById('clienteNitOferta').value || '';
+    const clienteDireccion = document.getElementById('clienteDireccionOferta').value || '';
+    const clienteTelefono = document.getElementById('clienteTelefonoOferta').value || '';
+    const clienteEmail = document.getElementById('clienteEmailOferta').value || '';
+    const condiciones = document.getElementById('condicionesOferta').value || '';
+    const observaciones = document.getElementById('observacionesOferta').value || '';
+    const descuento = parseFloat(document.getElementById('descuentoOferta').value) || 0;
+    
+    let subtotal = 0;
+    let productosHTML = '';
+    productosOfertaTemp.forEach(p => {
+        const sub = p.cantidad * p.precio;
+        subtotal += sub;
+        productosHTML += `
+            <tr>
+                <td style="padding:8px;border:1px solid #D7C9B2;">${p.referencia} (${p.color})</td>
+                <td style="padding:8px;border:1px solid #D7C9B2;">${p.talla}</td>
+                <td style="padding:8px;border:1px solid #D7C9B2;text-align:center;">${p.cantidad}</td>
+                <td style="padding:8px;border:1px solid #D7C9B2;text-align:right;">$${p.precio.toLocaleString()}</td>
+                <td style="padding:8px;border:1px solid #D7C9B2;text-align:right;">$${sub.toLocaleString()}</td>
+            </tr>
+        `;
+    });
+    
+    const total = subtotal - (subtotal * descuento / 100);
+    
+    // Imágenes como miniaturas
+    let imagenesHTML = '';
+    imagenesOfertaSeleccionadas.forEach(url => {
+        imagenesHTML += `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin:4px;border:1px solid #D7C9B2;">`;
+    });
+    
+    const contenidoHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Oferta Comercial LUMA</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Montserrat', Arial, sans-serif; background: #F9F6F0; padding: 40px; }
+            .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 24px; padding: 40px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4D4845; padding-bottom: 20px; margin-bottom: 30px; }
+            .logo img { max-width: 140px; }
+            .header-right { text-align: right; }
+            .header-right h1 { font-size: 28px; color: #4D4845; letter-spacing: 2px; }
+            .header-right p { font-size: 12px; color: #7B7369; margin: 2px 0; }
+            .cliente-box { background: #F2EBDC; padding: 20px; border-radius: 16px; margin-bottom: 30px; }
+            .cliente-box h3 { color: #4D4845; font-size: 16px; margin-bottom: 8px; }
+            .cliente-box .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .cliente-box .grid p { font-size: 14px; color: #4D4845; }
+            .info-oferta { display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 14px; color: #4D4845; }
+            .info-oferta strong { color: #4D4845; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background: #4D4845; color: white; padding: 10px; text-align: left; }
+            td { padding: 8px; border-bottom: 1px solid #D7C9B2; }
+            .totales { text-align: right; font-size: 16px; margin-top: 20px; }
+            .totales .linea { display: flex; justify-content: space-between; padding: 6px 0; }
+            .totales .total { font-weight: 700; font-size: 20px; color: #4D4845; border-top: 2px solid #4D4845; padding-top: 12px; margin-top: 8px; }
+            .imagenes { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+            .condiciones { background: #F9F6F0; padding: 16px; border-radius: 12px; margin: 20px 0; font-size: 14px; color: #4D4845; }
+            .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #7B7369; border-top: 1px solid #D7C9B2; padding-top: 20px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo"><img src="https://i.postimg.cc/fTK149zg/L0G0-SIN-F0ND0-02.png" alt="LUMA" style="max-width:140px;"></div>
+                <div class="header-right">
+                    <h1>OFERTA COMERCIAL</h1>
+                    <p><strong>N° ${numeroOferta}</strong></p>
+                    <p>Fecha: ${fecha} | Vigencia: ${vigencia}</p>
+                </div>
+            </div>
+
+            <div class="cliente-box">
+                <h3>👤 Datos del cliente</h3>
+                <div class="grid">
+                    <p><strong>Nombre:</strong> ${clienteNombre}</p>
+                    ${clienteEmpresa ? `<p><strong>Empresa:</strong> ${clienteEmpresa}</p>` : ''}
+                    ${clienteNit ? `<p><strong>NIT:</strong> ${clienteNit}</p>` : ''}
+                    ${clienteDireccion ? `<p><strong>Dirección:</strong> ${clienteDireccion}</p>` : ''}
+                    ${clienteTelefono ? `<p><strong>Teléfono:</strong> ${clienteTelefono}</p>` : ''}
+                    ${clienteEmail ? `<p><strong>Email:</strong> ${clienteEmail}</p>` : ''}
+                </div>
+            </div>
+
+            <table>
+                <thead><tr><th>Producto</th><th>Talla</th><th style="text-align:center;">Cant.</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th></tr></thead>
+                <tbody>${productosHTML}</tbody>
+            </table>
+
+            ${imagenesOfertaSeleccionadas.length > 0 ? `<div class="imagenes">${imagenesHTML}</div>` : ''}
+
+            <div class="totales">
+                <div class="linea"><span>Subtotal</span><span>$${subtotal.toLocaleString()}</span></div>
+                ${descuento > 0 ? `<div class="linea" style="color:#27ae60;"><span>Descuento (${descuento}%)</span><span>-$${(subtotal * descuento / 100).toLocaleString()}</span></div>` : ''}
+                <div class="total"><span>Total</span><span>$${total.toLocaleString()}</span></div>
+            </div>
+
+            ${condiciones ? `<div class="condiciones"><strong>Condiciones:</strong><br>${condiciones}</div>` : ''}
+            ${observaciones ? `<div style="margin-top:10px;font-size:14px;color:#4D4845;"><strong>Observaciones:</strong><br>${observaciones}</div>` : ''}
+
+            <div class="footer">
+                <p>LUMA Colombia | Comodidad que se nota | info@lumacolombia.com | +57 323 387 7904</p>
+                <p style="margin-top:4px;">Esta oferta es válida hasta ${vigencia}. Los precios incluyen IVA.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+    
+    // Generar PDF con html2pdf (ya debería estar cargado en admin.html, si no, lo cargamos)
+    if (typeof html2pdf === 'undefined') {
+        // Cargar la librería si no existe
+        await new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = resolve;
+            document.head.appendChild(script);
+        });
+    }
+    
+    const ventana = window.open('', '_blank');
+    ventana.document.write(contenidoHTML);
+    ventana.document.close();
+    
+    setTimeout(() => {
+        ventana.print();
+    }, 500);
+};
+
+// ==================== GUARDAR EN FIRESTORE ====================
+
+window.guardarOfertaFirestore = async function() {
+    const clienteNombre = document.getElementById('clienteNombreOferta').value.trim();
+    if (!clienteNombre) { alert('Ingresa al menos el nombre del cliente'); return; }
+    if (productosOfertaTemp.length === 0) { alert('Agrega al menos un producto'); return; }
+    
+    const ofertaData = {
+        numero: document.getElementById('ofertaNumero').value,
+        fecha: document.getElementById('ofertaFecha').value,
+        vigencia: document.getElementById('ofertaVigencia').value,
+        cliente: {
+            nombre: clienteNombre,
+            empresa: document.getElementById('clienteEmpresaOferta').value || '',
+            nit: document.getElementById('clienteNitOferta').value || '',
+            direccion: document.getElementById('clienteDireccionOferta').value || '',
+            telefono: document.getElementById('clienteTelefonoOferta').value || '',
+            email: document.getElementById('clienteEmailOferta').value || ''
+        },
+        productos: productosOfertaTemp.map(p => ({
+            referencia: p.referencia,
+            color: p.color,
+            talla: p.talla,
+            cantidad: p.cantidad,
+            precio: p.precio,
+            imagenes: p.imagenes || []
+        })),
+        imagenesSeleccionadas: imagenesOfertaSeleccionadas,
+        condiciones: document.getElementById('condicionesOferta').value || '',
+        observaciones: document.getElementById('observacionesOferta').value || '',
+        descuento: parseFloat(document.getElementById('descuentoOferta').value) || 0,
+        subtotal: productosOfertaTemp.reduce((s, p) => s + p.cantidad * p.precio, 0),
+        total: (() => {
+            const s = productosOfertaTemp.reduce((a, p) => a + p.cantidad * p.precio, 0);
+            const d = parseFloat(document.getElementById('descuentoOferta').value) || 0;
+            return s - (s * d / 100);
+        })(),
+        creadoEn: new Date().toISOString()
+    };
+    
+    try {
+        // ✅ Importación correcta
+        const { db } = await import('./js/firebase-config.js');
+        const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        const docRef = await addDoc(collection(db, 'ofertas'), ofertaData);
+        alert(`✅ Oferta guardada en Firestore con ID: ${docRef.id}`);
+        cerrarModalOferta();
+    } catch (error) {
+        console.error('Error guardando oferta:', error);
+        alert('❌ Error al guardar la oferta');
+    }
+};
 </script>
 
 <!-- Modal Factura -->
@@ -1059,5 +1480,113 @@ document.getElementById('agregarColorBtn').addEventListener('click', window.agre
         </div>
     </div>
 </div>
+<!-- Modal Oferta Comercial -->
+<div id="modalOferta" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+    <div class="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div class="relative bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 z-10 shadow-2xl">
+        
+        <div class="flex justify-between items-center mb-4 sticky top-0 bg-white pb-4 border-b border-[#E8DDD0]">
+            <h2 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-file-signature text-[#7B7369]"></i> Oferta Comercial
+            </h2>
+            <button onclick="cerrarModalOferta()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Datos de la empresa (fijos) -->
+            <div class="bg-[#F9F6F0] p-4 rounded-xl">
+                <h3 class="font-bold text-[#4D4845] mb-2">🏢 LUMA</h3>
+                <p class="text-sm text-[#4D4845]">NIT: 1234089454</p>
+                <p class="text-sm text-[#4D4845]">Tel: +57 323 387 7904</p>
+                <p class="text-sm text-[#4D4845]">info@lumacolombia.com</p>
+            </div>
+            <!-- Datos de la oferta -->
+            <div class="bg-[#F9F6F0] p-4 rounded-xl">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold">N° Oferta</label>
+                        <input type="text" id="ofertaNumero" class="w-full border rounded-lg px-3 py-1.5 text-sm bg-white" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold">Fecha</label>
+                        <input type="date" id="ofertaFecha" class="w-full border rounded-lg px-3 py-1.5 text-sm bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold">Vigencia</label>
+                        <input type="date" id="ofertaVigencia" class="w-full border rounded-lg px-3 py-1.5 text-sm bg-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div class="bg-[#F2EBDC] p-4 rounded-xl mt-4">
+            <h3 class="font-bold text-[#4D4845] mb-2">👤 Datos del cliente</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <input type="text" id="clienteNombreOferta" placeholder="Nombre *" class="border rounded-lg px-3 py-2 text-sm">
+                <input type="text" id="clienteEmpresaOferta" placeholder="Empresa" class="border rounded-lg px-3 py-2 text-sm">
+                <input type="text" id="clienteNitOferta" placeholder="NIT" class="border rounded-lg px-3 py-2 text-sm">
+                <input type="text" id="clienteDireccionOferta" placeholder="Dirección" class="border rounded-lg px-3 py-2 text-sm">
+                <input type="text" id="clienteTelefonoOferta" placeholder="Teléfono" class="border rounded-lg px-3 py-2 text-sm">
+                <input type="email" id="clienteEmailOferta" placeholder="Email" class="border rounded-lg px-3 py-2 text-sm">
+            </div>
+        </div>
+
+        <!-- Productos -->
+        <div class="bg-[#F9F6F0] p-4 rounded-xl mt-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-[#4D4845]">📦 Productos</h3>
+                <button onclick="agregarProductoOferta()" class="bg-[#4D4845] text-white px-3 py-1.5 rounded-full text-sm">
+                    <i class="fas fa-plus mr-1"></i> Agregar
+                </button>
+            </div>
+            <div id="listaProductosOferta" class="space-y-2 max-h-60 overflow-y-auto">
+                <p class="text-gray-400 text-sm">No hay productos agregados</p>
+            </div>
+            <div class="flex justify-between mt-3 pt-2 border-t border-[#E8DDD0]">
+                <span class="font-semibold">Subtotal:</span>
+                <span id="subtotalOferta" class="font-bold">$0</span>
+            </div>
+            <div class="flex justify-between items-center mt-2">
+                <span class="font-semibold">Descuento (%):</span>
+                <input type="number" id="descuentoOferta" value="0" class="w-20 border rounded-lg px-2 py-1 text-sm text-right">
+                <span class="font-semibold">Total:</span>
+                <span id="totalOferta" class="font-bold text-[#4D4845] text-lg">$0</span>
+            </div>
+        </div>
+
+        <!-- Imágenes y condiciones -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div class="bg-[#F2EBDC] p-4 rounded-xl">
+                <h3 class="font-bold text-[#4D4845] mb-2">🖼️ Imágenes destacadas</h3>
+                <div id="imagenesSeleccionadasOferta" class="flex flex-wrap gap-2">
+                    <p class="text-gray-400 text-sm">Selecciona imágenes desde los productos agregados</p>
+                </div>
+                <p class="text-xs text-[#7B7369] mt-2">Haz clic en una imagen para agregarla/quitar</p>
+            </div>
+            <div class="bg-[#F2EBDC] p-4 rounded-xl">
+                <h3 class="font-bold text-[#4D4845] mb-2">📝 Condiciones de la oferta</h3>
+                <textarea id="condicionesOferta" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Ej: Entrega en 5 días, pago 50% anticipo...">Entrega en 5 días hábiles. Pago 50% al aceptar la oferta y 50% al recibir la mercancía.</textarea>
+                <h3 class="font-bold text-[#4D4845] mt-3 mb-1">📌 Observaciones</h3>
+                <textarea id="observacionesOferta" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex gap-3 mt-6 pt-4 border-t border-[#E8DDD0]">
+            <button onclick="generarOfertaPDF()" class="flex-1 bg-[#4D4845] text-white py-2.5 rounded-full font-semibold hover:bg-[#3A3633] transition">
+                <i class="fas fa-file-pdf mr-2"></i> Generar PDF
+            </button>
+            <button onclick="guardarOfertaFirestore()" class="flex-1 border-2 border-[#4D4845] text-[#4D4845] py-2.5 rounded-full font-semibold hover:bg-[#F2EBDC] transition">
+                <i class="fas fa-save mr-2"></i> Guardar oferta
+            </button>
+            <button onclick="cerrarModalOferta()" class="flex-1 border border-gray-300 rounded-full py-2.5 text-sm font-semibold">Cancelar</button>
+        </div>
+    </div>
+</div>
+       <!-- html2pdf para ofertas -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 </body>
 </html>
